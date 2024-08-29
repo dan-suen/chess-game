@@ -19,7 +19,7 @@ function App() {
   }, [positions]);
   useEffect(() => {
     updateTaken();
-    updateSentence();
+    updateSentence(turn);
   }, [turn]);
 
   return (
@@ -33,9 +33,13 @@ function App() {
         }}
       />
       <label htmlFor="flip">Play as Black</label>
+      <p id="turnDisplay"></p>
       <button onClick={() => {
           setPositions([...positions].fill(null))
         }}>New Game</button>
+        <button onClick={() => {
+          setTurn(turn === "white" ? "black" : "white")
+        }}>Turn Change</button>
       <table id="chessboard">
 
 
