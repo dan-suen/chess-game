@@ -5,8 +5,10 @@
       "dom",
       "dom.iterable",
       "esnext",
-      "es2015"
+      "es2015",
     ],
+    "types": ["react", "react-dom"],
+    "typeRoots": ["./node_modules/@types", "./src/types"],
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -22,6 +24,7 @@
     "jsx": "react-jsx"
   },
   "include": [
-    "src"
+    "src",
+    "src/**/*"
   ]
 }

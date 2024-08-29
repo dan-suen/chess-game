@@ -55,3 +55,8 @@
   vertical-align: middle;
   border: 1px solid black;
 }
+
+.icon-size {
+  width: 5em;
+  height: 5em;
+}

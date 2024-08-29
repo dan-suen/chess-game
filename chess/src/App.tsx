@@ -9,6 +9,7 @@ function App() {
   const [positions, setPositions] = useState<(string|null)[]>(Array(64).fill(null));
   const [flip, setFlip] = useState<boolean>(false);
   const [turn, setTurn] = useState<"black" | "white">("white");
+  const [taken, setTaken] = useState<(string|null)[]>(Array(64).fill(null));
   useEffect(() => {
     createBoard(positions, flip);
     setTurn(flip ? "black" : "white")
@@ -18,9 +19,13 @@ function App() {
     setTurn(flip ? "black" : "white")
   }, [positions]);
   useEffect(() => {
-    updateTaken();
+    updateTaken(positions, taken, setTaken);
     updateSentence(turn);
-  }, [turn]);
+  }, [turn, taken]);
+
+
+
+
 
   return (
     <div className="App">
@@ -37,9 +42,8 @@ function App() {
       <button onClick={() => {
           setPositions([...positions].fill(null))
         }}>New Game</button>
-        <button onClick={() => {
-          setTurn(turn === "white" ? "black" : "white")
-        }}>Turn Change</button>
+        <div id="taken"></div>
+
       <table id="chessboard">
 
 
