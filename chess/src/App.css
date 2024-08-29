@@ -36,3 +36,22 @@
     transform: rotate(360deg);
   }
 }
+.white{
+  background-color: white;
+}
+.brown{
+  background-color: brown;
+}
+#chessboard {
+  border-collapse: collapse; 
+  height: 400px; 
+  border: 1px solid black;
+}
+
+#chessboard th {
+  width: 50px;
+  height: 50px; 
+  text-align: center;
+  vertical-align: middle;
+  border: 1px solid black;
+}
