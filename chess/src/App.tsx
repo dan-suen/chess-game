@@ -23,6 +23,7 @@ function App() {
   }, []);
   useEffect(() => {
     addPieces(turn, setTurn, positions, setPositions, activeId, setActiveId);
+    updateTaken(positions, taken, setTaken)
   }, [positions, activeId]);
   useEffect(() => {
     setTurn(flip ? "black" : "white")
@@ -32,8 +33,8 @@ function App() {
   }, [flip]);
   useEffect(() => {
     addPieces(turn, setTurn, positions, setPositions, activeId, setActiveId);
-    updateTaken(positions, taken, setTaken)
     updateSentence(turn);
+    updateTaken(positions, taken, setTaken)
   }, [turn]);
  
 
