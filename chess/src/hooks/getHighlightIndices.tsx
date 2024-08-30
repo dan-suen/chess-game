@@ -16,7 +16,6 @@ const getHighlightIndices = function (
     const [row, col] = indexToPos(index);
     let moves: number[] = [];
   
-    // Horizontal and Vertical Moves
     for (let i = row + 1; i < 8; i++) {
       const targetIndex = posToIndex(i, col);
       if (positions[targetIndex]) {
@@ -68,7 +67,6 @@ const getHighlightIndices = function (
     const [row, col] = indexToPos(index);
     let moves: number[] = [];
   
-    // Diagonal Moves
     const directions = [
       [1, 1], [1, -1], [-1, 1], [-1, -1]
     ];
@@ -119,7 +117,7 @@ const getHighlightIndices = function (
     return [...getRookMoves(index), ...getBishopMoves(index)];
   };
   
-  let moves: number[] = []; // Define moves at the beginning of the function
+  let moves: number[] = []; 
 
   if (/R[0-9]/.test(activeElement)) {
     moves = getRookMoves(activeIndex);
