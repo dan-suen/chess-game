@@ -12,14 +12,10 @@ import { ReactComponent as BRookIcon } from "./Chess_rdt45.svg";
 import { ReactComponent as WRookIcon } from "./Chess_rlt45.svg";
 import { ReactComponent as BPawnIcon } from "./Chess_pdt45.svg";
 import { ReactComponent as WPawnIcon } from "./Chess_plt45.svg";
+import { ReactComponent as EmptyIcon } from "./No_image.svg";
 import clickFunction from "./clickFunction";
 import clickFunctionEmpty from "./clickFunctionEmpty";
 
-const EmptyIcon: React.FC = () => (
-    <svg width="0" height="0" style={{ display: 'none' }}>
-      {}
-    </svg>
-  );
 const map:Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
     'BB1' : BBishopIcon, 
     'BB2' : BBishopIcon,
@@ -60,8 +56,9 @@ const addPieces = function (
     turn: "black" | "white",
     setTurn: React.Dispatch<React.SetStateAction<"black" | "white">>,
     positions: (string | null)[],
+    setPositions:React.Dispatch<React.SetStateAction<(string | null)[]>>,
     activeId: string | null,
-    setActiveId: React.Dispatch<React.SetStateAction<string | null>>
+    setActiveId: React.Dispatch<React.SetStateAction<(string | null)>>
 ) {
     positions.forEach((element, index) => {
         const targetId = `cell-${index}`;
@@ -78,9 +75,14 @@ const addPieces = function (
                 const container = document.createElement('div');
                 ReactDOM.render(
                     <IconComponent
-                        onClick={element
-                            ? (event: React.MouseEvent<SVGSVGElement>) => clickFunction(event, turn, activeId, setActiveId)
-                            : (event: React.MouseEvent<SVGSVGElement>) => clickFunctionEmpty(event, turn, setTurn)}
+                    onClick={element
+                        ? (event: React.MouseEvent<SVGSVGElement>) => {
+                            clickFunction(event, turn, setTurn, activeId, setActiveId, positions, setPositions)
+                        }
+                        : (event: React.MouseEvent<SVGSVGElement>) => {
+                            clickFunctionEmpty(event, turn, setTurn, activeId, setActiveId, positions, setPositions)
+                        }
+                        }
                         key={`${element}-${index}`}
                         className={`icon-size ${isBlackPiece ? 'black' : ''} ${isWhitePiece ? 'white' : ''} ${activeId===targetId ? 'active' : ''}`}
                     />,

@@ -22,17 +22,17 @@ function App() {
     createBoard(flip, positions, setPositions)
   }, []);
   useEffect(() => {
-    addPieces(turn, setTurn, positions, activeId, setActiveId);
+    addPieces(turn, setTurn, positions, setPositions, activeId, setActiveId);
   }, [positions, activeId]);
   useEffect(() => {
     setTurn(flip ? "black" : "white")
     createBoard(flip, positions, setPositions);
-    addPieces(turn, setTurn, positions, activeId, setActiveId);
     setTaken(Array(64).fill(null))
+    addPieces(turn, setTurn, positions, setPositions, activeId, setActiveId);
   }, [flip]);
   useEffect(() => {
-    //updatePositions(setPositions)
-    //updateTaken(positions, taken, setTaken);
+    addPieces(turn, setTurn, positions, setPositions, activeId, setActiveId);
+    updateTaken(positions, taken, setTaken)
     updateSentence(turn);
   }, [turn]);
  
@@ -51,7 +51,7 @@ function App() {
       <label htmlFor="flip">Play as Black</label>
       <p id="turnDisplay"></p>
       <button onClick={() => {
-          addPieces(turn, setTurn, positions, activeId, setActiveId);
+          addPieces(turn, setTurn, positions, setPositions, activeId, setActiveId);
         }}>New Game</button>
         <div id="taken"></div>
 
