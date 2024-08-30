@@ -4,12 +4,11 @@ import Toggle from "react-toggle";
 import createBoard from "./hooks/createBoard";
 import updateSentence from "./hooks/updateSentence";
 import updateTaken from "./hooks/updateTaken";
+import addPieces from "./hooks/addPieces";
 function App() {
   const [positions, setPositions] = useState<(string|null)[]>(
     (() => {
       const initialPositions = Array(64).fill(null);
-      initialPositions[0] = "WK";
-      initialPositions[4] = "BK";
       return initialPositions;
     })()
     //Array(64).fill(null)
@@ -17,18 +16,23 @@ function App() {
   const [flip, setFlip] = useState<boolean>(false);
   const [turn, setTurn] = useState<"black" | "white">("white");
   const [taken, setTaken] = useState<(string|null)[]>(Array(64).fill(null));
+  const [activeId, setActiveId] = useState<string | null>(null);
+
   useEffect(() => {
-    createBoard(positions, setPositions, flip)
+    createBoard(flip, positions, setPositions)
   }, []);
-  
   useEffect(() => {
-    createBoard(positions, setPositions, flip);
+    addPieces(turn, setTurn, positions, activeId, setActiveId);
+  }, [positions, activeId]);
+  useEffect(() => {
     setTurn(flip ? "black" : "white")
+    createBoard(flip, positions, setPositions);
+    addPieces(turn, setTurn, positions, activeId, setActiveId);
     setTaken(Array(64).fill(null))
   }, [flip]);
   useEffect(() => {
     //updatePositions(setPositions)
-    updateTaken(positions, taken, setTaken);
+    //updateTaken(positions, taken, setTaken);
     updateSentence(turn);
   }, [turn]);
  
@@ -42,13 +46,12 @@ function App() {
         defaultChecked={flip}
         onChange={() => {
           setFlip(!flip)
-          setPositions([...positions].fill(null))
         }}
       />
       <label htmlFor="flip">Play as Black</label>
       <p id="turnDisplay"></p>
       <button onClick={() => {
-          setPositions([...positions].fill(null))
+          addPieces(turn, setTurn, positions, activeId, setActiveId);
         }}>New Game</button>
         <div id="taken"></div>
 

@@ -36,7 +36,7 @@
     transform: rotate(360deg);
   }
 }
-.white{
+.blank{
   background-color: white;
 }
 .brown{
@@ -59,4 +59,7 @@
 .icon-size {
   width: 5em;
   height: 5em;
+}
+.active{
+  background-color: blue;
 }
