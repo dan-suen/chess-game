@@ -13,91 +13,110 @@ import { ReactComponent as WRookIcon } from "./Chess_rlt45.svg";
 import { ReactComponent as BPawnIcon } from "./Chess_pdt45.svg";
 import { ReactComponent as WPawnIcon } from "./Chess_plt45.svg";
 import { ReactComponent as EmptyIcon } from "./No_image.svg";
-import clickFunction from "./clickFunction";
-import clickFunctionEmpty from "./clickFunctionEmpty";
 import getHighlightIndices from './getHighlightIndices';
 
-const map:Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
-    'BB1' : BBishopIcon, 
-    'BB2' : BBishopIcon,
-    'WB1' : WBishopIcon,
-    'WB2' : WBishopIcon,
-    'BN1' : BKnightIcon,
-    'BN2' : BKnightIcon,
-    'WN1' : WKnightIcon,
-    'WN2' : WKnightIcon,
-    'BK' :BKingIcon,
-    'WK' :WKingIcon,
-    'WQ' :WQueenIcon,
-    'BQ' :BQueenIcon,
-    'BR1' :BRookIcon,
-    'BR2' :BRookIcon,
-    'WR1' :WRookIcon,
-    'WR2' :WRookIcon,
-    'WP1':WPawnIcon,
-    'WP2':WPawnIcon,
-    'WP3':WPawnIcon,
-    'WP4':WPawnIcon,
-    'WP5':WPawnIcon,
-    'WP6':WPawnIcon,
-    'WP7':WPawnIcon,
-    'WP8':WPawnIcon,
-    'BP1':BPawnIcon,
-    'BP2':BPawnIcon,
-    'BP3':BPawnIcon,
-    'BP4':BPawnIcon,
-    'BP5':BPawnIcon,
-    'BP6':BPawnIcon,
-    'BP7':BPawnIcon,
-    'BP8':BPawnIcon,
-    "X" : EmptyIcon
-}
+type ClickFunctionType = (
+    event: React.MouseEvent<SVGSVGElement>,
+    turn: "black" | "white",
+    setTurn: React.Dispatch<React.SetStateAction<"black" | "white">>,
+    activeId: string | null,
+    setActiveId: React.Dispatch<React.SetStateAction<string | null>>,
+    positions: (string | null)[],
+    setPositions: React.Dispatch<React.SetStateAction<(string | null)[]>>,
+    highlightedSquares: Set<number>,
+    setHighlightedSquares: React.Dispatch<React.SetStateAction<Set<number>>>,
+    activePieceType: string | null,
+    setActivePieceType: React.Dispatch<React.SetStateAction<string | null>>
+) => void;
 
-const addPieces = function (
+const map: Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
+    'BB1': BBishopIcon,
+    'BB2': BBishopIcon,
+    'WB1': WBishopIcon,
+    'WB2': WBishopIcon,
+    'BN1': BKnightIcon,
+    'BN2': BKnightIcon,
+    'WN1': WKnightIcon,
+    'WN2': WKnightIcon,
+    'BK': BKingIcon,
+    'WK': WKingIcon,
+    'WQ': WQueenIcon,
+    'BQ': BQueenIcon,
+    'BR1': BRookIcon,
+    'BR2': BRookIcon,
+    'WR1': WRookIcon,
+    'WR2': WRookIcon,
+    'WP1': WPawnIcon,
+    'WP2': WPawnIcon,
+    'WP3': WPawnIcon,
+    'WP4': WPawnIcon,
+    'WP5': WPawnIcon,
+    'WP6': WPawnIcon,
+    'WP7': WPawnIcon,
+    'WP8': WPawnIcon,
+    'BP1': BPawnIcon,
+    'BP2': BPawnIcon,
+    'BP3': BPawnIcon,
+    'BP4': BPawnIcon,
+    'BP5': BPawnIcon,
+    'BP6': BPawnIcon,
+    'BP7': BPawnIcon,
+    'BP8': BPawnIcon,
+    "X": EmptyIcon
+};
+
+const addPieces = (
     turn: "black" | "white",
     setTurn: React.Dispatch<React.SetStateAction<"black" | "white">>,
     positions: (string | null)[],
-    setPositions:React.Dispatch<React.SetStateAction<(string | null)[]>>,
+    setPositions: React.Dispatch<React.SetStateAction<(string | null)[]>>,
     activeId: string | null,
-    setActiveId: React.Dispatch<React.SetStateAction<(string | null)>>
-) {
-    const activeIndex = activeId ? parseInt(activeId.match(/[0-9]+/)![0], 10) : -1;
-    const activeElement = activeIndex !== -1 ? positions[activeIndex] : null;
-    const highlightIndices = getHighlightIndices(activeId, positions, activeElement);
-    positions.forEach((element:string | null, index:number) => {
+    setActiveId: React.Dispatch<React.SetStateAction<string | null>>,
+    highlightedSquares: Set<number>,
+    setHighlightedSquares: React.Dispatch<React.SetStateAction<Set<number>>>,
+    activePieceType: string | null,
+    setActivePieceType: React.Dispatch<React.SetStateAction<string | null>>,
+    clickFunction: ClickFunctionType,
+    clickFunctionEmpty: ClickFunctionType
+) => {
+    positions.forEach((element: string | null, index: number) => {
         const targetId = `cell-${index}`;
         const target = document.getElementById(targetId);
-        
+
         if (target) {
-            target.innerHTML = '';
-            target.classList.remove('non-active')
-            
+            target.innerHTML = ''; // Clear the cell content
+            target.classList.remove('non-active', 'highlight'); // Remove old classes
+
             const IconComponent = map[element || "X"];
             const isBlackPiece = element && element.startsWith('B');
             const isWhitePiece = element && element.startsWith('W');
-            
-            
-            const isHighlighted = highlightIndices.includes(index);
-            
+
+            const isHighlighted = highlightedSquares.has(index);
             const isActive = activeId === targetId;
+
+            // Add 'highlight' class for squares that should be highlighted
+            if (isHighlighted) {
+                target.classList.add('highlight');
+            }
+
+            // Add 'non-active' class for squares that are highlighted but not active
             if (!isActive && isHighlighted) {
-                target.classList.add('non-active'); 
+                target.classList.add('non-active');
             }
 
             if (IconComponent) {
                 const container = document.createElement('div');
                 ReactDOM.render(
                     <IconComponent
-                    onClick={element
-                        ? (event: React.MouseEvent<SVGSVGElement>) => {
-                            clickFunction(event, turn, setTurn, activeId, setActiveId, positions, setPositions)
-                        }
-                        : (event: React.MouseEvent<SVGSVGElement>) => {
-                            clickFunctionEmpty(event, turn, setTurn, activeId, setActiveId, positions, setPositions)
-                        }
-                        }
+                        onClick={(event: React.MouseEvent<SVGSVGElement>) => {
+                            if (element) {
+                                clickFunction(event, turn, setTurn, activeId, setActiveId, positions, setPositions, highlightedSquares, setHighlightedSquares, activePieceType, setActivePieceType);
+                            } else {
+                                clickFunctionEmpty(event, turn, setTurn, activeId, setActiveId, positions, setPositions, highlightedSquares, setHighlightedSquares, activePieceType, setActivePieceType);
+                            }
+                        }}
                         key={`${element}-${index}`}
-                        className={`icon-size ${isBlackPiece ? 'black' : ''} ${isWhitePiece ? 'white' : ''} ${activeId===targetId ? 'active' : ''}`}
+                        className={`icon-size ${isBlackPiece ? 'black' : ''} ${isWhitePiece ? 'white' : ''} ${isActive ? 'active' : ''}`}
                     />,
                     container
                 );
