@@ -63,3 +63,8 @@
 .active{
   background-color: blue;
 }
+
+.non-active {
+  background-color: rgba(0, 255, 0, 0.3); /* Light green background */
+  transition: background-color 0.3s ease; /* Smooth transition */
+}

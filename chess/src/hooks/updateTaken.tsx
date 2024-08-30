@@ -93,7 +93,6 @@ const updateTaken = function (positions:(string|null)[],taken:(string|null)[], s
     findTaken(positions, setTaken)
 
 
-
     let BTaken = taken.filter(element => /^B/g.test(element || "")).length > 0 
             ? taken.filter(element => /^B/g.test(element || "")) 
             : ["X"];

@@ -15,6 +15,7 @@ import { ReactComponent as WPawnIcon } from "./Chess_plt45.svg";
 import { ReactComponent as EmptyIcon } from "./No_image.svg";
 import clickFunction from "./clickFunction";
 import clickFunctionEmpty from "./clickFunctionEmpty";
+import getHighlightIndices from './getHighlightIndices';
 
 const map:Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
     'BB1' : BBishopIcon, 
@@ -60,16 +61,28 @@ const addPieces = function (
     activeId: string | null,
     setActiveId: React.Dispatch<React.SetStateAction<(string | null)>>
 ) {
-    positions.forEach((element, index) => {
+    const activeIndex = activeId ? parseInt(activeId.match(/[0-9]+/)![0], 10) : -1;
+    const activeElement = activeIndex !== -1 ? positions[activeIndex] : null;
+    const highlightIndices = getHighlightIndices(activeId, positions, activeElement);
+    positions.forEach((element:string | null, index:number) => {
         const targetId = `cell-${index}`;
         const target = document.getElementById(targetId);
-
+        
         if (target) {
             target.innerHTML = '';
-
+            target.classList.remove('non-active')
+            
             const IconComponent = map[element || "X"];
             const isBlackPiece = element && element.startsWith('B');
             const isWhitePiece = element && element.startsWith('W');
+            
+            
+            const isHighlighted = highlightIndices.includes(index);
+            
+            const isActive = activeId === targetId;
+            if (!isActive && isHighlighted) {
+                target.classList.add('non-active'); 
+            }
 
             if (IconComponent) {
                 const container = document.createElement('div');
