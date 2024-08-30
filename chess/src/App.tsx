@@ -5,17 +5,18 @@ import createBoard from "./hooks/createBoard";
 import updateSentence from "./hooks/updateSentence";
 import updateTaken from "./hooks/updateTaken";
 import addPieces from "./hooks/addPieces";
+import { isCheck } from "./hooks/gamelogic";
 function App() {
   const [positions, setPositions] = useState<(string|null)[]>(
     (() => {
       const initialPositions = Array(64).fill(null);
       initialPositions[0] = "BR1";
-      initialPositions[1] = "BK1";
+      initialPositions[1] = "BN1";
       initialPositions[2] = "BB1";
       initialPositions[3] = "BK";
       initialPositions[4] = "BQ";
       initialPositions[5] = "BB2";
-      initialPositions[6] = "BK2";
+      initialPositions[6] = "BN2";
       initialPositions[7] = "BR2";
       initialPositions[8] = "BP1";
       initialPositions[9] = "BP2";
@@ -37,12 +38,12 @@ function App() {
       initialPositions[54] = "WP7";
       initialPositions[55] = "WP8";
       initialPositions[56] = "WR1";
-      initialPositions[57] = "WK1";
+      initialPositions[57] = "WN1";
       initialPositions[58] = "WB1";
       initialPositions[59] = "WK";
       initialPositions[60] = "WQ";
       initialPositions[61] = "WB2";
-      initialPositions[62] = "WK2";
+      initialPositions[62] = "WN2";
       initialPositions[63] = "WR2";
         
       return initialPositions;
@@ -52,6 +53,7 @@ function App() {
   const [turn, setTurn] = useState<"black" | "white">("white");
   const [taken, setTaken] = useState<(string|null)[]>(Array(64).fill(null));
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [check, setCheck] = useState<boolean>(false);
 
   useEffect(() => {
     createBoard(flip, positions, setPositions)
@@ -69,7 +71,8 @@ function App() {
   useEffect(() => {
     addPieces(turn, setTurn, positions, setPositions, activeId, setActiveId);
     updateSentence(turn);
-    updateTaken(positions, taken, setTaken)
+    updateTaken(positions, taken, setTaken);
+    setCheck(isCheck(positions, turn));
   }, [turn]);
  
 
@@ -86,6 +89,7 @@ function App() {
       />
       <label htmlFor="flip">Play as Black</label>
       <p id="turnDisplay"></p>
+      <p id="isCheck">{check ? "Check" : ""}</p>
       <button onClick={() => {
          createBoard(flip, positions, setPositions)
         }}>New Game</button>

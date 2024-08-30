@@ -29,7 +29,7 @@ const map:Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
     "X" : X
 }
 const findTaken = function (positions:(string|null)[], setTaken:React.Dispatch<React.SetStateAction<(string | null)[]>>) {
-    let pieces:string[] = ["WB1","WB2","WR1","WR2","WK1","WK2","WK","WQ","WP1","WP2","WP3","WP4","WP5","WP6","WP7","WP8","BB1","BB2","BR1","BR2","BK1","BK2","BK","BQ","BP1","BP2","BP3","BP4","BP5","BP6","BP7","BP8"];
+    let pieces:string[] = ["WB1","WB2","WR1","WR2","WN1","WN2","WK","WQ","WP1","WP2","WP3","WP4","WP5","WP6","WP7","WP8","BB1","BB2","BR1","BR2","BN1","BN2","BK","BQ","BP1","BP2","BP3","BP4","BP5","BP6","BP7","BP8"];
     let filtered = pieces.filter(element => !positions.includes(element))
     let results:string[] = []
     filtered.forEach(element => {

@@ -34,12 +34,12 @@ const createBoard = function (flip:boolean,positions:(string|null)[], setPositio
     let array = Array(64).fill(null);
     if (!flip) {
         array[0] = "BR1";
-        array[1] = "BK1";
+        array[1] = "BN1";
         array[2] = "BB1";
         array[3] = "BK";
         array[4] = "BQ";
         array[5] = "BB2";
-        array[6] = "BK2";
+        array[6] = "BN2";
         array[7] = "BR2";
         array[8] = "BP1";
         array[9] = "BP2";
@@ -61,22 +61,22 @@ const createBoard = function (flip:boolean,positions:(string|null)[], setPositio
         array[54] = "WP7";
         array[55] = "WP8";
         array[56] = "WR1";
-        array[57] = "WK1";
+        array[57] = "WN1";
         array[58] = "WB1";
         array[59] = "WK";
         array[60] = "WQ";
         array[61] = "WB2";
-        array[62] = "WK2";
+        array[62] = "WN2";
         array[63] = "WR2";
         
     } else {
         array[0] = "WR1";
-        array[1] = "WK1";
+        array[1] = "WN1";
         array[2] = "WB1";
         array[3] = "WK";
         array[4] = "WQ";
         array[5] = "WB2";
-        array[6] = "WK2";
+        array[6] = "WN2";
         array[7] = "WR2";
         array[8] = "WP1";
         array[9] = "WP2";
@@ -98,12 +98,12 @@ const createBoard = function (flip:boolean,positions:(string|null)[], setPositio
         array[54] = "BP7";
         array[55] = "BP8";
         array[56] = "BR1";
-        array[57] = "BK1";
+        array[57] = "BN1";
         array[58] = "BB1";
         array[59] = "BK";
         array[60] = "BQ";
         array[61] = "BB2";
-        array[62] = "BK2";
+        array[62] = "BN2";
         array[63] = "BR2";
     }
     setPositions(array)

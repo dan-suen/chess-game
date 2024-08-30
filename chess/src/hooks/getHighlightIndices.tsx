@@ -125,7 +125,7 @@ const getHighlightIndices = function (
     moves = getRookMoves(activeIndex);
   } else if (/B[0-9]/.test(activeElement)) {
     moves = getBishopMoves(activeIndex);
-  } else if (/K[0-9]/.test(activeElement)) {
+  } else if (/N[0-9]/.test(activeElement)) {
     moves = getKnightMoves(activeIndex);
   } else if (/Q/.test(activeElement)) {
     moves = getQueenMoves(activeIndex);
