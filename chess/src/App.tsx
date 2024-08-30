@@ -92,6 +92,7 @@ function App() {
       <p id="isCheck">{check ? "Check" : ""}</p>
       <button onClick={() => {
          createBoard(flip, positions, setPositions)
+         setTurn(flip ? "black" : "white")
         }}>New Game</button>
         <div id="taken"></div>
 
