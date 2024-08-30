@@ -3,9 +3,9 @@ import { useState, useEffect } from "react";
 import Toggle from "react-toggle";
 import createBoard from "./hooks/createBoard";
 import updateSentence from "./hooks/updateSentence";
-import updateTaken from "./hooks/updateTaken";
 import addPieces from "./hooks/addPieces";
 import { isCheck } from "./hooks/gamelogic";
+import TakenPieces from "./hooks/takenPieces";
 function App() {
   const [positions, setPositions] = useState<(string|null)[]>(
     (() => {
@@ -60,7 +60,6 @@ function App() {
   }, []);
   useEffect(() => {
     addPieces(turn, setTurn, positions, setPositions, activeId, setActiveId);
-    updateTaken(positions, taken, setTaken)
   }, [positions, activeId]);
   useEffect(() => {
     setTurn(flip ? "black" : "white")
@@ -71,7 +70,6 @@ function App() {
   useEffect(() => {
     addPieces(turn, setTurn, positions, setPositions, activeId, setActiveId);
     updateSentence(turn);
-    updateTaken(positions, taken, setTaken);
     setCheck(isCheck(positions, turn));
   }, [turn]);
  
@@ -94,7 +92,7 @@ function App() {
          createBoard(flip, positions, setPositions)
          setTurn(flip ? "black" : "white")
         }}>New Game</button>
-        <div id="taken"></div>
+        <TakenPieces positions={positions} />
 
       <table id="chessboard">
 
