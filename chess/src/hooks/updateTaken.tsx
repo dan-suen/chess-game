@@ -28,9 +28,69 @@ const map:Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
     'BPawn':BPawnIcon,
     "X" : X
 }
+const findTaken = function (positions:(string|null)[], setTaken:React.Dispatch<React.SetStateAction<(string | null)[]>>) {
+    let pieces:string[] = ["WB1","WB2","WR1","WR2","WK1","WK2","WK","WQ","WP1","WP2","WP3","WP4","WP5","WP6","WP7","WP8","BB1","BB2","BR1","BR2","BK1","BK2","BK","BQ","BP1","BP2","BP3","BP4","BP5","BP6","BP7","BP8"];
+    let filtered = pieces.filter(element => !positions.includes(element))
+    let results:string[] = []
+    filtered.forEach(element => {
+        switch(element){
+            case "WB1":
+            case "WB2":
+                results.push('WBishop')
+                break;
+            case "WR1":
+            case "WR2":
+                results.push('WRook')
+                break;
+            case "WK1":
+            case "WK2":
+                results.push('WKnight')
+                break;
+            case "WQ":
+                results.push('WQueen')
+                break;
+            case "WP1":
+            case "WP2":
+            case "WP3":
+            case "WP4":
+            case "WP5":
+            case "WP6":
+            case "WP7":
+            case "WP8":
+                results.push('WPawn')
+                break;
+            case "BB1":
+            case "BB2":
+                results.push('BBishop')
+                break;
+            case "BR1":
+            case "BR2":
+                results.push('BRook')
+                break;
+            case "BK1":
+            case "BK2":
+                results.push('BKnight')
+                break;
+            case "BQ":
+                results.push('BQueen')
+                break;
+            case "BP1":
+            case "BP2":
+            case "BP3":
+            case "BP4":
+            case "BP5":
+            case "BP6":
+            case "BP7":
+            case "BP8":
+                results.push('BPawn')
+                break;
+        }
+    })
+    setTaken(results);
+}
 const updateTaken = function (positions:(string|null)[],taken:(string|null)[], setTaken:React.Dispatch<React.SetStateAction<(string | null)[]>>) {
 
-    
+    findTaken(positions, setTaken)
 
 
 
@@ -62,9 +122,9 @@ const updateTaken = function (positions:(string|null)[],taken:(string|null)[], s
     wRoot.render(
         <>
             <p>Pieces Taken by White:</p>
-            {BTaken.map(piece => {
+            {BTaken.map((piece,index) => {
                 const IconComponent = map[piece || "X"];
-                return IconComponent ? <IconComponent key={piece} className="icon-size" /> : null;
+                return IconComponent ? <IconComponent key={`${piece}-${index}`} className="icon-size" /> : null;
             })}
         </>
     );
@@ -76,9 +136,9 @@ const updateTaken = function (positions:(string|null)[],taken:(string|null)[], s
     bRoot.render(
         <>
             <p>Pieces Taken by Black:</p>
-            {WTaken.map(piece => {
+            {WTaken.map((piece,index) => {
                 const IconComponent = map[piece || "X"];
-                return IconComponent ? <IconComponent key={piece} className="icon-size" /> : null;
+                return IconComponent ? <IconComponent key={`${piece}-${index}`} className="icon-size" /> : null;
             })}
         </>
     );
