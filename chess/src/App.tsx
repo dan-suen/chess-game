@@ -96,6 +96,7 @@ function App() {
       // Clear active states to avoid lingering effects
       setActiveId(null);
       setActivePieceType(null);
+      setHighlightedSquares(new Set<number>());
     }
   };
   const triggerPromotion = (clickedId: number, activePieceType: string) => {
