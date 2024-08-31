@@ -69,28 +69,35 @@ function App() {
 
   const handlePromotionChoice = (choice: string) => {
     if (promotionSquare !== null && activePieceType) {
-      const newPieceType = activePieceType.startsWith("W")
-        ? `W${choice}`
-        : `B${choice}`;
+      // Determine the base name for the new piece
+      const basePieceName = activePieceType.startsWith("W") ? `W${choice}` : `B${choice}`;
   
-      //console.log("Promoting pawn to:", newPieceType);
-
+      // Determine a unique identifier for the promoted piece
+      let suffix = 1;
+      while (positions.includes(`${basePieceName}${suffix}`)) {
+        suffix++; // Increment suffix until an unused identifier is found
+      }
+  
+      const newPieceType = `${basePieceName}${suffix}`; // Create the unique piece name
+  
+      console.log("Promoting pawn to:", newPieceType); // Log the new piece name
+  
       const newPositions = [...positions];
       newPositions[promotionSquare!] = newPieceType; // Replace pawn with the selected piece at the promotion square
-    
-      //console.log("Before promotion, positions:", positions);
-      setPositions(newPositions); 
-      //console.log("After promotion, positions:", newPositions);
-
+  
+      console.log("Before promotion, positions:", positions);
+      setPositions(newPositions);
+      console.log("After promotion, positions:", newPositions);
+  
       setShowPromotionModal(false); // Hide the modal
       setTurn(turn === "white" ? "black" : "white"); // Switch the turn
       setPromotionSquare(null); // Clear the promotion square
+  
       // Clear active states to avoid lingering effects
       setActiveId(null);
       setActivePieceType(null);
     }
   };
-
   const triggerPromotion = (clickedId: number, activePieceType: string) => {
     //console.log("Triggering promotion at square:", clickedId);
     setPromotionSquare(clickedId); // Track where the promotion happens

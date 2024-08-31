@@ -30,42 +30,29 @@ type ClickFunctionType = (
     lastMove: { from: number; to: number; piece: string } | null
   ) => void;
 
-const map: Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
-    'BB1': BBishopIcon,
-    'BB2': BBishopIcon,
-    'WB1': WBishopIcon,
-    'WB2': WBishopIcon,
-    'BN1': BKnightIcon,
-    'BN2': BKnightIcon,
-    'WN1': WKnightIcon,
-    'WN2': WKnightIcon,
+  const baseMap: Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
+    'BB': BBishopIcon,  
+    'WB': WBishopIcon, 
+    'BN': BKnightIcon,
+    'WN': WKnightIcon,
     'BK': BKingIcon,
     'WK': WKingIcon,
-    'WQ': WQueenIcon,
     'BQ': BQueenIcon,
-    'BR1': BRookIcon,
-    'BR2': BRookIcon,
-    'WR1': WRookIcon,
-    'WR2': WRookIcon,
-    'WP1': WPawnIcon,
-    'WP2': WPawnIcon,
-    'WP3': WPawnIcon,
-    'WP4': WPawnIcon,
-    'WP5': WPawnIcon,
-    'WP6': WPawnIcon,
-    'WP7': WPawnIcon,
-    'WP8': WPawnIcon,
-    'BP1': BPawnIcon,
-    'BP2': BPawnIcon,
-    'BP3': BPawnIcon,
-    'BP4': BPawnIcon,
-    'BP5': BPawnIcon,
-    'BP6': BPawnIcon,
-    'BP7': BPawnIcon,
-    'BP8': BPawnIcon,
-    "X": EmptyIcon
+    'WQ': WQueenIcon,
+    'BR': BRookIcon,
+    'WR': WRookIcon,
+    'BP': BPawnIcon,
+    'WP': WPawnIcon,
+    'X': EmptyIcon
 };
 
+const getIconComponent = (piece: string | null) => {
+    if (!piece) return baseMap["X"]; // Return empty icon for null or empty piece
+    const baseType = piece.replace(/[0-9]/g, ''); // Remove any number suffix from promoted pieces
+    return baseMap[baseType] || baseMap["X"]; // Return the matching component or empty icon if not found
+};
+
+// Updated addPieces function
 const addPieces = (
     turn: "black" | "white",
     setTurn: React.Dispatch<React.SetStateAction<"black" | "white">>,
@@ -89,7 +76,7 @@ const addPieces = (
             target.innerHTML = ''; // Clear the cell content
             target.classList.remove('non-active', 'highlight'); // Remove old classes
 
-            const IconComponent = map[element || "X"];
+            const IconComponent = getIconComponent(element);
             const isBlackPiece = element && element.startsWith('B');
             const isWhitePiece = element && element.startsWith('W');
 

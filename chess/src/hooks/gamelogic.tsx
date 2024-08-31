@@ -37,13 +37,13 @@ const isCheck = (
   ): boolean => {
     // Determine the king's identifier based on the turn
     const kingIdentifier = `${turn[0].toUpperCase()}K`;
-    console.log(`Searching for king: ${kingIdentifier}`);
+    //console.log(`Searching for king: ${kingIdentifier}`);
     
     const kingIndex = positions.findIndex(piece => piece === kingIdentifier); // Find king's position
-    console.log(`King index: ${kingIndex}`);
+    //console.log(`King index: ${kingIndex}`);
     
     if (kingIndex === -1) {
-      console.log(`No king found for ${turn}`);
+      //console.log(`No king found for ${turn}`);
       return false; // No king found
     }
   

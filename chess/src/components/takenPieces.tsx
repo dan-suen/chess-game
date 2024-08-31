@@ -15,116 +15,124 @@ import { ReactComponent as X } from "./x-symbol-svgrepo-com.svg";
 
 // Map of piece names to their SVG components
 const map: Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
-    'BBishop': BBishopIcon, 
-    'WBishop': WBishopIcon,
-    'BKnight': BKnightIcon,
-    'WKnight': WKnightIcon,
-    'BKing': BKingIcon,
-    'WKing': WKingIcon,
-    'WQueen': WQueenIcon,
-    'BQueen': BQueenIcon,
-    'BRook': BRookIcon,
-    'WRook': WRookIcon,
-    'WPawn': WPawnIcon,
-    'BPawn': BPawnIcon,
-    "X": X
+  BBishop: BBishopIcon,
+  WBishop: WBishopIcon,
+  BKnight: BKnightIcon,
+  WKnight: WKnightIcon,
+  BKing: BKingIcon,
+  WKing: WKingIcon,
+  WQueen: WQueenIcon,
+  BQueen: BQueenIcon,
+  BRook: BRookIcon,
+  WRook: WRookIcon,
+  WPawn: WPawnIcon,
+  BPawn: BPawnIcon,
+  X: X,
 };
 
 // Find taken pieces based on current positions
-const findTaken = (positions: (string | null)[], setTaken: React.Dispatch<React.SetStateAction<string[]>>) => {
-    const pieces: string[] = [
-        "WB1", "WB2", "WR1", "WR2", "WN1", "WN2", "WK", "WQ", "WP1", "WP2", "WP3", "WP4", "WP5", "WP6", "WP7", "WP8",
-        "BB1", "BB2", "BR1", "BR2", "BN1", "BN2", "BK", "BQ", "BP1", "BP2", "BP3", "BP4", "BP5", "BP6", "BP7", "BP8"
-    ];
-
-    const filtered = pieces.filter(piece => !positions.includes(piece));
-    const results = filtered.map(piece => {
-        switch (piece) {
-            case "WB1":
-            case "WB2":
-                return 'WBishop';
-            case "WR1":
-            case "WR2":
-                return 'WRook';
-            case "WN1":
-            case "WN2":
-                return 'WKnight';
-            case "WQ":
-                return 'WQueen';
-            case "WP1":
-            case "WP2":
-            case "WP3":
-            case "WP4":
-            case "WP5":
-            case "WP6":
-            case "WP7":
-            case "WP8":
-                return 'WPawn';
-            case "BB1":
-            case "BB2":
-                return 'BBishop';
-            case "BR1":
-            case "BR2":
-                return 'BRook';
-            case "BN1":
-            case "BN2":
-                return 'BKnight';
-            case "BQ":
-                return 'BQueen';
-            case "BP1":
-            case "BP2":
-            case "BP3":
-            case "BP4":
-            case "BP5":
-            case "BP6":
-            case "BP7":
-            case "BP8":
-                return 'BPawn';
-            default:
-                return 'X';
+const findTaken = (
+    positions: (string | null)[],
+    setTaken: React.Dispatch<React.SetStateAction<string[]>>
+  ) => {
+    // Mapping from board abbreviations to full piece names
+    const pieceMap: Record<string, string> = {
+      WP1: 'WPawn', WP2: 'WPawn', WP3: 'WPawn', WP4: 'WPawn', WP5: 'WPawn', WP6: 'WPawn', WP7: 'WPawn', WP8: 'WPawn',
+      BP1: 'BPawn', BP2: 'BPawn', BP3: 'BPawn', BP4: 'BPawn', BP5: 'BPawn', BP6: 'BPawn', BP7: 'BPawn', BP8: 'BPawn',
+      WB1: 'WBishop', WB2: 'WBishop',
+      BB1: 'BBishop', BB2: 'BBishop',
+      WR1: 'WRook', WR2: 'WRook',
+      BR1: 'BRook', BR2: 'BRook',
+      WN1: 'WKnight', WN2: 'WKnight',
+      BN1: 'BKnight', BN2: 'BKnight',
+      WQ: 'WQueen', BQ: 'BQueen',
+      WK: 'WKing', BK: 'BKing'
+    };
+  
+    // Initial counts for all pieces on both sides
+    const initialPieceCount: Record<string, number> = {
+      WPawn: 8, BPawn: 8,    // Pawns
+      WBishop: 2, BBishop: 2, // Bishops
+      WRook: 2, BRook: 2,     // Rooks
+      WKnight: 2, BKnight: 2, // Knights
+      WQueen: 1, BQueen: 1,   // Queens
+      WKing: 1, BKing: 1      // Kings
+    };
+  
+    // Copy the counts to track pieces on the board
+    const currentPieceCount = { ...initialPieceCount };
+  
+    console.log("Initial Piece Count:", initialPieceCount); // Log the initial counts
+  
+    // Iterate through all positions on the board
+    positions.forEach((piece) => {
+      if (piece) {
+        const pieceType = pieceMap[piece]; // Map the abbreviation to the full name
+  
+        if (pieceType && currentPieceCount[pieceType] !== undefined) {
+          // Decrease count for each original piece found
+          currentPieceCount[pieceType] -= 1;
+        } else if (!pieceType && /^[WB][QRBN]/.test(piece)) {
+          // Detected a promoted piece; ignore it in the count
+          console.log(`Promoted piece detected: ${piece}, excluding from taken count.`);
         }
+      }
     });
-
-    setTaken(results);
-};
-
+  
+    console.log("Current Piece Count after board iteration:", currentPieceCount); // Log the counts after checking the board
+  
+    // Filter out pieces that have a positive count (meaning they are missing from the board)
+    const takenPieces = Object.entries(currentPieceCount)
+      .filter(([piece, count]) => count > 0)
+      .flatMap(([piece, count]) => Array(count).fill(piece));
+  
+    console.log("Computed Taken Pieces:", takenPieces); // Log the final list of taken pieces
+  
+    setTaken(takenPieces);
+  };
+  
 // Component to display taken pieces
 const TakenPieces: React.FC<{ positions: (string | null)[] }> = ({ positions }) => {
-    const [taken, setTaken] = useState<string[]>([]);
+  const [taken, setTaken] = useState<string[]>([]);
 
-    useEffect(() => {
-        findTaken(positions, setTaken);
-    }, [positions]);
+  useEffect(() => {
+    console.log("Current Positions:", positions); // Log the positions passed to the component
+    findTaken(positions, setTaken);
+  }, [positions]);
 
-    const BTaken = taken.filter(piece => piece.startsWith('B'));
-    const WTaken = taken.filter(piece => piece.startsWith('W'));
+  const BTaken = taken.filter((piece) => piece.startsWith("B"));
+  const WTaken = taken.filter((piece) => piece.startsWith("W"));
 
-    return (
-        <div id="taken">
-            <div id="takenBlack">
-                <p>Pieces Taken by White:</p>
-                {BTaken.length > 0 ? (
-                    BTaken.map((piece, index) => {
-                        const IconComponent = map[piece || "X"];
-                        return IconComponent ? <IconComponent key={`${piece}-${index}`} className="icon-size" /> : null;
-                    })
-                ) : (
-                    <p>No pieces taken</p>
-                )}
-            </div>
-            <div id="takenWhite">
-                <p>Pieces Taken by Black:</p>
-                {WTaken.length > 0 ? (
-                    WTaken.map((piece, index) => {
-                        const IconComponent = map[piece || "X"];
-                        return IconComponent ? <IconComponent key={`${piece}-${index}`} className="icon-size" /> : null;
-                    })
-                ) : (
-                    <p>No pieces taken</p>
-                )}
-            </div>
-        </div>
-    );
+  return (
+    <div id="taken">
+      <div id="takenBlack">
+        <p>Pieces Taken by White:</p>
+        {BTaken.length > 0 ? (
+          BTaken.map((piece, index) => {
+            const IconComponent = map[piece || "X"];
+            return IconComponent ? (
+              <IconComponent key={`${piece}-${index}`} className="icon-size" />
+            ) : null;
+          })
+        ) : (
+          <p>No pieces taken</p>
+        )}
+      </div>
+      <div id="takenWhite">
+        <p>Pieces Taken by Black:</p>
+        {WTaken.length > 0 ? (
+          WTaken.map((piece, index) => {
+            const IconComponent = map[piece || "X"];
+            return IconComponent ? (
+              <IconComponent key={`${piece}-${index}`} className="icon-size" />
+            ) : null;
+          })
+        ) : (
+          <p>No pieces taken</p>
+        )}
+      </div>
+    </div>
+  );
 };
 
 export default TakenPieces;

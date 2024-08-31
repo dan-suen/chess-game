@@ -4,7 +4,7 @@ const getHighlightIndices = function (
   activeElement: string | null,
   lastMove: { from: number; to: number; piece: string } | null // Include lastMove for en passant
 ): number[] {
-  console.log("getHighlightIndices called with:", { activeId, positions, activeElement, lastMove });
+  //console.log("getHighlightIndices called with:", { activeId, positions, activeElement, lastMove });
   if (!activeId || !activeElement) return [];
 
   const activeIndex = parseInt(activeId.match(/[0-9]+/)![0], 10);
@@ -193,7 +193,7 @@ const getHighlightIndices = function (
     moves = getPawnMoves(activeIndex);
   }
 
-  console.log("Computed highlight indices:", moves);
+  //console.log("Computed highlight indices:", moves);
   return moves;
 };
 
