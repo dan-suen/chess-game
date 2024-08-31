@@ -103,8 +103,7 @@ function App() {
       setPromotingPawnType(null);
     }
   };
-  
-  
+
   const triggerPromotion = (clickedId: number, activePieceType: string) => {
     setPromotionSquare(clickedId);
     setActivePieceType(activePieceType);
@@ -113,6 +112,7 @@ function App() {
     setPromotingPawnType(activePieceType);
     setPromotionColor(activePieceType.startsWith('W') ? 'white' : 'black');
   };
+
   const isValidMove = (
     pieceType: string | null,
     from: number,
@@ -141,32 +141,38 @@ function App() {
   
     switch (normalizedPieceType) {
       case 'WP': // White Pawn
-        if (toRow === fromRow - 1 && colDiff === 0 && !targetPiece) return true;
-        if (fromRow === 6 && toRow === 4 && colDiff === 0 && !targetPiece && !positions[to + 8]) return true;
-        if (toRow === fromRow - 1 && colDiff === 1 && targetPiece?.startsWith('B')) return true;
+        if (toRow === fromRow - 1 && colDiff === 0 && !targetPiece) return true; // Normal forward move
+        if (fromRow === 6 && toRow === 4 && colDiff === 0 && !targetPiece && !positions[to + 8]) return true; // Double move
+        if (toRow === fromRow - 1 && colDiff === 1 && targetPiece?.startsWith('B')) return true; // Diagonal capture
+        
+        // En passant capture for white pawn
         if (fromRow === 3 && toRow === 2 && colDiff === 1 && !targetPiece) {
           if (
             lastMove &&
             lastMove.piece === 'BP' &&
-            lastMove.from === to + 8 && 
-            lastMove.to === from + 1 
+            lastMove.from === to + 8 && // The black pawn moved two squares
+            lastMove.to === from + 1 // And it's right beside the white pawn
           ) {
+            console.log("Valid en passant capture for white pawn");
             return true;
           }
         }
         return false;
   
       case 'BP': // Black Pawn
-        if (toRow === fromRow + 1 && colDiff === 0 && !targetPiece) return true;
-        if (fromRow === 1 && toRow === 3 && colDiff === 0 && !targetPiece && !positions[to - 8]) return true;
-        if (toRow === fromRow + 1 && colDiff === 1 && targetPiece?.startsWith('W')) return true;
+        if (toRow === fromRow + 1 && colDiff === 0 && !targetPiece) return true; // Normal forward move
+        if (fromRow === 1 && toRow === 3 && colDiff === 0 && !targetPiece && !positions[to - 8]) return true; // Double move
+        if (toRow === fromRow + 1 && colDiff === 1 && targetPiece?.startsWith('W')) return true; // Diagonal capture
+  
+        // En passant capture for black pawn
         if (fromRow === 4 && toRow === 5 && colDiff === 1 && !targetPiece) {
           if (
             lastMove &&
             lastMove.piece === 'WP' &&
-            lastMove.from === to - 8 &&
-            lastMove.to === from - 1 
+            lastMove.from === to - 8 && // The white pawn moved two squares
+            lastMove.to === from - 1 // And it's right beside the black pawn
           ) {
+            console.log("Valid en passant capture for black pawn");
             return true;
           }
         }
@@ -212,7 +218,6 @@ function App() {
         return false;
     }
   };
-  
   
   // Helper function to check if the path is clear between two squares
   const isPathClear = (from: number, to: number, positions: (string | null)[]): boolean => {
@@ -273,10 +278,39 @@ function App() {
   
       const clickedId = parseInt(clickedIdMatch[0], 10);
       console.log(`Clicked square ID: ${clickedId}`);
+      console.log(`Current activeId: ${activeId}`);
+      console.log(`Current activePieceType: ${activePieceType}`);
   
-      if (activeId) {
+      // Handle piece selection
+      if (activeId === null) {
+        // No piece is currently selected, select a piece
+        if (
+          positions[clickedId] &&
+          ((turn === "white" && positions[clickedId]!.startsWith("W")) ||
+            (turn === "black" && positions[clickedId]!.startsWith("B")))
+        ) {
+          // Select a piece if it's the player's turn
+          console.log(`Selecting piece at cell-${clickedId}`);
+          setActiveId(grandParentElement.id);
+          console.log(`New activeId set to: ${grandParentElement.id}`);
+          setActivePieceType(positions[clickedId]);
+          const newHighlightedSquares = getHighlightIndices(
+            grandParentElement.id,
+            positions,
+            positions[clickedId],
+            lastMove
+          );
+          setHighlightedSquares(new Set(newHighlightedSquares));
+        } else {
+          console.log("Click on an empty square or invalid move");
+          setActiveId(null);
+          setActivePieceType(null);
+          setHighlightedSquares(new Set());
+        }
+      } else {
+        // A piece is already selected, attempt to make a move
         const previousId = parseInt(activeId.match(/[0-9]+/)![0], 10);
-        console.log(`Moving ${activePieceType} from ${previousId} to ${clickedId}`);
+        console.log(`Attempting to move ${activePieceType} from ${previousId} to ${clickedId}`);
   
         const fromRow = Math.floor(previousId / 8);
         const toRow = Math.floor(clickedId / 8);
@@ -285,33 +319,40 @@ function App() {
         const colDiff = Math.abs(toCol - fromCol);
         const targetPiece = positions[clickedId];
   
+        console.log(`From row: ${fromRow}, To row: ${toRow}, From column: ${fromCol}, To column: ${toCol}`);
+        console.log(`Target piece: ${targetPiece}`);
+  
         // Validate the move based on the piece type and rules
         if (activePieceType && isValidMove(activePieceType, previousId, clickedId, positions, turn, lastMove)) {
-          console.log("Valid move");
+          console.log("Valid move detected");
+  
+          const newPositions = [...positions]; // Copy positions to make updates
   
           // Handle en passant capture
-          if (activePieceType === 'WP' && fromRow === 3 && toRow === 2 && colDiff === 1 && !targetPiece) {
-            positions[clickedId + 8] = null; // Capture the black pawn
-          } else if (activePieceType === 'BP' && fromRow === 4 && toRow === 5 && colDiff === 1 && !targetPiece) {
-            positions[clickedId - 8] = null; // Capture the white pawn
+          if (activePieceType.startsWith('W') && fromRow === 3 && toRow === 2 && colDiff === 1 && !targetPiece) {
+            console.log("En passant capture by white pawn");
+            newPositions[clickedId + 8] = null; // Remove the black pawn captured en passant
+          } else if (activePieceType.startsWith('B') && fromRow === 4 && toRow === 5 && colDiff === 1 && !targetPiece) {
+            console.log("En passant capture by black pawn");
+            newPositions[clickedId - 8] = null; // Remove the white pawn captured en passant
           }
   
           // Handle promotion separately
           if (activePieceType && /^(WP|BP)/.test(activePieceType) && (toRow === 0 || toRow === 7)) {
-            const newPositions = [...positions];
+            console.log("Pawn promotion detected");
             newPositions[previousId] = null;
             setPositions(newPositions);
-  
             triggerPromotion(clickedId, activePieceType);
             return;
           }
   
-          // Handle capturing logic
+          // Handle normal capturing logic
           if (positions[clickedId] !== null) {
             if (
               (turn === "white" && positions[clickedId]?.startsWith("B")) ||
               (turn === "black" && positions[clickedId]?.startsWith("W"))
             ) {
+              console.log("Normal capture detected");
               setTaken((prev) => {
                 const newTaken = [...prev];
                 const capturedPiece = positions[clickedId];
@@ -323,52 +364,29 @@ function App() {
           }
   
           // Update the board for normal moves or captures
-          const newPositions = [...positions];
+          console.log("Updating board positions");
           newPositions[previousId] = null;
           newPositions[clickedId] = activePieceType;
           setPositions(newPositions);
   
           // Reset states after a valid move or capture
+          console.log("Resetting states after move");
           setActiveId(null);
           setActivePieceType(null);
           setHighlightedSquares(new Set());
           setTurn(turn === "white" ? "black" : "white");
           setLastMove({ from: previousId, to: clickedId, piece: activePieceType! });
         } else {
-          // Deselect if the move is invalid
           console.log("Invalid move detected");
           setActiveId(null);
           setActivePieceType(null);
           setHighlightedSquares(new Set());
         }
-      } else if (
-        positions[clickedId] &&
-        ((turn === "white" && positions[clickedId]!.startsWith("W")) ||
-          (turn === "black" && positions[clickedId]!.startsWith("B")))
-      ) {
-        // Select a piece if it's the player's turn
-        setActiveId(grandParentElement.id);
-        setActivePieceType(positions[clickedId]);
-        const newHighlightedSquares = getHighlightIndices(
-          grandParentElement.id,
-          positions,
-          positions[clickedId],
-          lastMove
-        );
-        setHighlightedSquares(new Set(newHighlightedSquares));
-      } else {
-        // Deselect if clicking on an empty square or invalid move
-        setActiveId(null);
-        setActivePieceType(null);
-        setHighlightedSquares(new Set());
       }
     },
     [turn, activeId, positions, highlightedSquares, activePieceType, lastMove]
   );
-  
-  
-  
-  
+
   const clickFunctionEmpty = useCallback(
     (
       event: React.MouseEvent<SVGSVGElement>,
@@ -385,32 +403,85 @@ function App() {
       lastMove: { from: number; to: number; piece: string } | null
     ) => {
       const parentElement = event.currentTarget.parentElement?.parentElement;
-
+  
       if (!parentElement || !parentElement.id) {
         console.error("Parent element or its ID not found.");
         return;
       }
-
+  
       const currentIdMatch = parentElement.id.match(/[0-9]+/);
       if (!currentIdMatch) {
         console.error("Failed to extract current ID from parent element.");
         return;
       }
       const currentId = parseInt(currentIdMatch[0], 10);
-
-      if (activeId && activePieceType) {
-        if (highlightedSquares.has(currentId)) {
-          const previousId = parseInt(activeId.match(/[0-9]+/)![0], 10);
-          const newPositions = [...positions];
-          newPositions[previousId] = null;
-          newPositions[currentId] = activePieceType;
-          setPositions(newPositions);
-          setActiveId(null);
-          setActivePieceType(null);
-          setHighlightedSquares(new Set());
-          setTurn(turn === "white" ? "black" : "white");
-          setLastMove({ from: previousId, to: currentId, piece: activePieceType });
+  
+      if (highlightedSquares.has(currentId) && activeId && activePieceType) {
+        const previousId = parseInt(activeId.match(/[0-9]+/)![0], 10);
+        const newPositions = [...positions];
+        newPositions[previousId] = null;
+        newPositions[currentId] = activePieceType;
+        setPositions(newPositions);
+        console.log("Valid move executed from", previousId, "to", currentId);
+  
+        // Handle any special cases, such as en passant or promotion
+        let shouldResetState = true; // Flag to control state reset
+  
+        const fromRow = Math.floor(previousId / 8);
+        const toRow = Math.floor(currentId / 8);
+        const colDiff = Math.abs((previousId % 8) - (currentId % 8));
+        const targetPiece = positions[currentId];
+  
+        // Check for special moves
+        if (activePieceType.startsWith('W') && fromRow === 3 && toRow === 2 && colDiff === 1 && !targetPiece) {
+          console.log("En passant capture by white pawn");
+          newPositions[currentId + 8] = null; // Remove the black pawn captured en passant
+          shouldResetState = false; // Prevent immediate reset to handle en passant
+        } else if (activePieceType.startsWith('B') && fromRow === 4 && toRow === 5 && colDiff === 1 && !targetPiece) {
+          console.log("En passant capture by black pawn");
+          newPositions[currentId - 8] = null; // Remove the white pawn captured en passant
+          shouldResetState = false; // Prevent immediate reset to handle en passant
         }
+  
+        // Check for promotion and handle it
+        if (activePieceType && /^(WP|BP)/.test(activePieceType) && (toRow === 0 || toRow === 7)) {
+          console.log("Pawn promotion detected");
+          newPositions[previousId] = null;
+          setPositions(newPositions);
+          triggerPromotion(currentId, activePieceType);
+          shouldResetState = false; // Prevent immediate reset to handle promotion
+        }
+  
+        // Handle captures
+        if (positions[currentId] !== null) {
+          if (
+            (turn === "white" && positions[currentId]?.startsWith("B")) ||
+            (turn === "black" && positions[currentId]?.startsWith("W"))
+          ) {
+            console.log("Normal capture detected");
+            setTaken((prev) => {
+              const newTaken = [...prev];
+              const capturedPiece = positions[currentId];
+              const index = newTaken.findIndex((item) => item === null);
+              if (index !== -1) newTaken[index] = capturedPiece;
+              return newTaken;
+            });
+          }
+        }
+  
+        // Prepare for the next state updates
+        setLastMove({ from: previousId, to: currentId, piece: activePieceType });
+        setTurn(turn === "white" ? "black" : "white");
+  
+        // Reset state only if necessary
+        if (shouldResetState) {
+          setTimeout(() => {
+            console.log("Resetting state after move");
+            setActiveId(null);
+            setActivePieceType(null);
+            setHighlightedSquares(new Set());
+          }, 50); // Slight delay to ensure all updates are properly processed
+        }        
       } else {
         const targetPiece = positions[currentId];
         if (
@@ -422,6 +493,7 @@ function App() {
           const newHighlightedSquares = getHighlightIndices(parentElement.id, positions, targetPiece, lastMove);
           setHighlightedSquares(new Set(newHighlightedSquares));
         } else {
+          console.log("this also happened")
           setActiveId(null);
           setActivePieceType(null);
           setHighlightedSquares(new Set());
@@ -430,6 +502,7 @@ function App() {
     },
     [turn, activeId, positions, highlightedSquares, activePieceType, lastMove]
   );
+  
 
   useEffect(() => {
     createBoard(flip, positions, setPositions);
