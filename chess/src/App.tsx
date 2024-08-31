@@ -67,34 +67,36 @@ function App() {
     }, 0); // Use a timeout to ensure state updates apply before recreating the board
   };
 
-const handlePromotionChoice = (choice: string) => {
-  if (promotionSquare !== null && activePieceType) {
-    const newPieceType = activePieceType.startsWith("W")
-      ? `W${choice}`
-      : `B${choice}`;
+  const handlePromotionChoice = (choice: string) => {
+    if (promotionSquare !== null && activePieceType) {
+      const newPieceType = activePieceType.startsWith("W")
+        ? `W${choice}`
+        : `B${choice}`;
+  
+      //console.log("Promoting pawn to:", newPieceType);
 
-    const newPositions = [...positions];
-    newPositions[promotionSquare] = newPieceType;
-    setPositions(newPositions);
-    setShowPromotionModal(false);
-    setPromotionSquare(null);
+      const newPositions = [...positions];
+      newPositions[promotionSquare!] = newPieceType; // Replace pawn with the selected piece at the promotion square
+    
+      //console.log("Before promotion, positions:", positions);
+      setPositions(newPositions); 
+      //console.log("After promotion, positions:", newPositions);
 
-    // Change turn after promotion
-    setTurn(turn === "white" ? "black" : "white");
-      
-    // Clear active states
-    setActiveId(null);
-    setActivePieceType(null);
-  }
-};
+      setShowPromotionModal(false); // Hide the modal
+      setTurn(turn === "white" ? "black" : "white"); // Switch the turn
+      setPromotionSquare(null); // Clear the promotion square
+      // Clear active states to avoid lingering effects
+      setActiveId(null);
+      setActivePieceType(null);
+    }
+  };
 
-const triggerPromotion = (clickedId: number) => {
-    const newPositions = [...positions];
-    newPositions[clickedId] = null; // Remove the old pawn immediately
-    setPositions(newPositions); // Update state to reflect removal
-    setPromotionSquare(clickedId); // Set the promotion square
+  const triggerPromotion = (clickedId: number, activePieceType: string) => {
+    //console.log("Triggering promotion at square:", clickedId);
+    setPromotionSquare(clickedId); // Track where the promotion happens
+    setActivePieceType(activePieceType); // Keep track of the piece being promoted
     setShowPromotionModal(true); // Show the promotion modal
-};
+  };
   const clickFunction = useCallback(
     (
       event: React.MouseEvent<SVGSVGElement>,
@@ -131,7 +133,7 @@ const triggerPromotion = (clickedId: number) => {
       }
   
       const clickedId = parseInt(clickedIdMatch[0], 10);
-      console.log("Clicked square ID:", clickedId);
+      //console.log("Clicked square ID:", clickedId);
   
       if (activeId) {
         const previousIdMatch = activeId.match(/[0-9]+/);
@@ -150,9 +152,16 @@ const triggerPromotion = (clickedId: number) => {
           
               // Check for pawn promotion
           if (activePieceType && /^(WP|BP)/.test(activePieceType) && (clickedRow === 0 || clickedRow === 7)) {
-            // Trigger promotion modal here
-            triggerPromotion(clickedId);
-            return; // Exit the function to prevent further processing
+            // Promotion detected
+            //console.log("Promotion detected at square:", clickedId);
+          
+            const newPositions = [...positions];
+            newPositions[previousId] = null; // Clear the original pawn position
+            setPositions(newPositions); // Update state to reflect removal
+          
+            // Trigger promotion modal
+            triggerPromotion(clickedId, activePieceType); // Pass necessary arguments
+            return; // Exit to prevent further processing
           }
           if (
             activePieceType?.includes("Pawn") &&
@@ -191,7 +200,7 @@ const triggerPromotion = (clickedId: number) => {
             (turn === "black" && positions[clickedId]!.startsWith("B")))
         ) {
           // Transfer active status if a new piece of the same color is clicked
-          console.log("Transferring active piece status to:", positions[clickedId]);
+          //console.log("Transferring active piece status to:", positions[clickedId]);
           setActiveId(grandParentElement.id);
           setActivePieceType(positions[clickedId]);
           const newHighlightedSquares = getHighlightIndices(
@@ -201,10 +210,10 @@ const triggerPromotion = (clickedId: number) => {
             lastMove
           );
           setHighlightedSquares(new Set(newHighlightedSquares));
-          console.log("New highlighted squares:", Array.from(newHighlightedSquares));
+          //console.log("New highlighted squares:", Array.from(newHighlightedSquares));
         } else {
           // Deselect only if clicking on a non-highlighted square
-          console.log("Deselecting piece.");
+          //console.log("Deselecting piece.");
           setActiveId(null);
           setActivePieceType(null);
           setHighlightedSquares(new Set());
@@ -216,14 +225,14 @@ const triggerPromotion = (clickedId: number) => {
           targetPiece &&
           ((turn === "white" && targetPiece.startsWith("W")) || (turn === "black" && targetPiece.startsWith("B")))
         ) {
-          console.log("Selecting new piece:", targetPiece, "at ID:", clickedId);
+          //console.log("Selecting new piece:", targetPiece, "at ID:", clickedId);
           setActiveId(grandParentElement.id);
           setActivePieceType(targetPiece);
           const newHighlightedSquares = getHighlightIndices(grandParentElement.id, positions, targetPiece, lastMove);
           setHighlightedSquares(new Set(newHighlightedSquares));
-          console.log("New highlighted squares:", Array.from(newHighlightedSquares));
+          //console.log("New highlighted squares:", Array.from(newHighlightedSquares));
         } else {
-          console.log("Cannot select this square.");
+          //console.log("Cannot select this square.");
         }
       }
     },
@@ -259,15 +268,15 @@ const triggerPromotion = (clickedId: number) => {
       }
       const currentId = parseInt(currentIdMatch[0], 10);
 
-      console.log("Current ID:", currentId);
-      console.log("Active ID:", activeId);
-      console.log("Highlighted squares:", Array.from(highlightedSquares));
-      console.log("Current turn:", turn);
+      // console.log("Current ID:", currentId);
+      // console.log("Active ID:", activeId);
+      // console.log("Highlighted squares:", Array.from(highlightedSquares));
+      // console.log("Current turn:", turn);
 
       if (activeId && activePieceType) {
         if (highlightedSquares.has(currentId)) {
           // Move the piece
-          console.log("Moving active piece to empty highlighted square:", currentId);
+          //console.log("Moving active piece to empty highlighted square:", currentId);
           const previousId = parseInt(activeId.match(/[0-9]+/)![0], 10);
           const newPositions = [...positions];
           newPositions[previousId] = null; // Clear the original square
@@ -279,7 +288,7 @@ const triggerPromotion = (clickedId: number) => {
           setTurn(turn === "white" ? "black" : "white"); // Switch turn
           setLastMove({ from: previousId, to: currentId, piece: activePieceType }); // Update last move
         } else {
-          console.log("Clicking on a non-highlighted square does nothing.");
+          //console.log("Clicking on a non-highlighted square does nothing.");
         }
       } else {
         const targetPiece = positions[currentId];
@@ -287,14 +296,14 @@ const triggerPromotion = (clickedId: number) => {
           targetPiece &&
           ((turn === "white" && targetPiece.startsWith("W")) || (turn === "black" && targetPiece.startsWith("B")))
         ) {
-          console.log("Selecting new piece:", targetPiece, "at ID:", currentId);
+         // console.log("Selecting new piece:", targetPiece, "at ID:", currentId);
           setActiveId(parentElement.id);
           setActivePieceType(targetPiece);
           const newHighlightedSquares = getHighlightIndices(parentElement.id, positions, targetPiece, lastMove); // Pass lastMove
           setHighlightedSquares(new Set(newHighlightedSquares));
-          console.log("New Highlighted Squares:", Array.from(newHighlightedSquares));
+          //console.log("New Highlighted Squares:", Array.from(newHighlightedSquares));
         } else {
-          console.log("Cannot select this square: Empty or not your turn.");
+          //console.log("Cannot select this square: Empty or not your turn.");
           setActiveId(null); // Deselect if clicking on an invalid square
           setActivePieceType(null);
           setHighlightedSquares(new Set());
