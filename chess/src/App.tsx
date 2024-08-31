@@ -7,8 +7,9 @@ import addPieces from "./hooks/addPieces";
 import { isCheck } from "./hooks/gamelogic";
 import TakenPieces from "./components/takenPieces";
 import getHighlightIndices from "./hooks/getHighlightIndices";
-import PromotionModal from "./components/PromotionModal";
+import PromotionSelector from "./components/PromotionSelector";
 
+// Initial positions of pieces on the chessboard
 const initialPositions: (string | null)[] = [
   'WRook', 'WKnight', 'WBishop', 'WQueen', 'WKing', 'WBishop', 'WKnight', 'WRook',
   'WPawn', 'WPawn', 'WPawn', 'WPawn', 'WPawn', 'WPawn', 'WPawn', 'WPawn',
@@ -32,79 +33,210 @@ function App() {
   const [lastMove, setLastMove] = useState<{ from: number; to: number; piece: string } | null>(null);
   const [showPromotionModal, setShowPromotionModal] = useState(false);
   const [promotionSquare, setPromotionSquare] = useState<number | null>(null);
+  const [isPromotion, setIsPromotion] = useState<boolean>(false);
+  const [promotingPawnType, setPromotingPawnType] = useState<string | null>(null);
+  const [promotionColor, setPromotionColor] = useState<'white' | 'black'>('white');
   
   // Utility function for calculating indices
   const posToIndex = (row: number, col: number): number => row * 8 + col;
+
   const handleNewGame = () => {
-    // Reset all state variables
-    setPositions([...initialPositions]); // Reset positions
-    setTurn(flip ? "black" : "white"); // Reset turn based on flip state
-    setTaken(Array(64).fill(null)); // Clear taken pieces
-    setActiveId(null); // Clear active square
-    setActivePieceType(null); // Clear active piece type
-    setHighlightedSquares(new Set()); // Clear highlighted squares
-    setCheck(false); // Reset check state
-    setLastMove(null); // Reset last move
-    
-    // Recreate the board and pieces after resetting the state
+    setPositions([...initialPositions]);
+    setTurn(flip ? "black" : "white");
+    setTaken(Array(64).fill(null));
+    setActiveId(null);
+    setActivePieceType(null);
+    setHighlightedSquares(new Set());
+    setCheck(false);
+    setLastMove(null);
+
     setTimeout(() => {
-      createBoard(flip, initialPositions, setPositions); // Use initial positions to recreate the board
+      createBoard(flip, initialPositions, setPositions);
       addPieces(
-        flip ? "black" : "white", // Ensure correct initial turn
+        flip ? "black" : "white",
         setTurn,
         initialPositions,
         setPositions,
-        null, // No active ID initially
+        null,
         setActiveId,
-        new Set(), // No highlighted squares initially
+        new Set(),
         setHighlightedSquares,
-        null, // No active piece type initially
+        null,
         setActivePieceType,
-        clickFunction, // Add clickFunction
-        clickFunctionEmpty, // Add clickFunctionEmpty
-        null // No last move initially
+        clickFunction,
+        clickFunctionEmpty,
+        null
       );
-    }, 0); // Use a timeout to ensure state updates apply before recreating the board
+    }, 0);
   };
 
-  const handlePromotionChoice = (choice: string) => {
+  const handlePromotionSelect = (choice: string) => {
     if (promotionSquare !== null && activePieceType) {
-      // Determine the base name for the new piece
+      // Determine the new piece type using abbreviations (Q, R, B, N)
       const basePieceName = activePieceType.startsWith("W") ? `W${choice}` : `B${choice}`;
   
-      // Determine a unique identifier for the promoted piece
+      // Ensure a unique name for the promoted piece by appending a suffix if necessary
       let suffix = 1;
       while (positions.includes(`${basePieceName}${suffix}`)) {
-        suffix++; // Increment suffix until an unused identifier is found
+        suffix++;
       }
+      const newPieceType = `${basePieceName}${suffix}`;
   
-      const newPieceType = `${basePieceName}${suffix}`; // Create the unique piece name
-  
-      console.log("Promoting pawn to:", newPieceType); // Log the new piece name
-  
+      // Update the positions array
       const newPositions = [...positions];
-      newPositions[promotionSquare!] = newPieceType; // Replace pawn with the selected piece at the promotion square
+      newPositions[promotionSquare] = newPieceType; // Replace pawn with the promoted piece
+      setPositions(newPositions); // Update the state
   
-      console.log("Before promotion, positions:", positions);
-      setPositions(newPositions);
-      console.log("After promotion, positions:", newPositions);
+      // Debugging output
+      console.log("Selected piece for promotion:", choice);
+      console.log("Promoted piece type:", newPieceType);
+      console.log("Updated positions array:", newPositions);
   
-      setShowPromotionModal(false); // Hide the modal
-      setTurn(turn === "white" ? "black" : "white"); // Switch the turn
-      setPromotionSquare(null); // Clear the promotion square
-  
-      // Clear active states to avoid lingering effects
+      // Reset promotion state
+      setShowPromotionModal(false);
+      setTurn(turn === "white" ? "black" : "white");
+      setPromotionSquare(null);
       setActiveId(null);
       setActivePieceType(null);
       setHighlightedSquares(new Set<number>());
+      setIsPromotion(false);
+      setPromotingPawnType(null);
     }
   };
+  
+  
   const triggerPromotion = (clickedId: number, activePieceType: string) => {
-    //console.log("Triggering promotion at square:", clickedId);
-    setPromotionSquare(clickedId); // Track where the promotion happens
-    setActivePieceType(activePieceType); // Keep track of the piece being promoted
-    setShowPromotionModal(true); // Show the promotion modal
+    setPromotionSquare(clickedId);
+    setActivePieceType(activePieceType);
+    setShowPromotionModal(true);
+    setIsPromotion(true);
+    setPromotingPawnType(activePieceType);
+    setPromotionColor(activePieceType.startsWith('W') ? 'white' : 'black');
   };
+  const isValidMove = (
+    pieceType: string | null,
+    from: number,
+    to: number,
+    positions: (string | null)[],
+    turn: "black" | "white",
+    lastMove: { from: number; to: number; piece: string } | null
+  ): boolean => {
+    if (!pieceType) return false;
+  
+    // Normalize the piece type by removing any trailing digits
+    const normalizedPieceType = pieceType.replace(/\d+$/, '');
+  
+    const fromRow = Math.floor(from / 8);
+    const fromCol = from % 8;
+    const toRow = Math.floor(to / 8);
+    const toCol = to % 8;
+  
+    const rowDiff = Math.abs(toRow - fromRow);
+    const colDiff = Math.abs(toCol - fromCol);
+  
+    const targetPiece = positions[to];
+  
+    console.log(`Validating move for ${normalizedPieceType} from ${from} to ${to}`);
+    console.log(`Target piece: ${targetPiece}, Row difference: ${rowDiff}, Column difference: ${colDiff}`);
+  
+    switch (normalizedPieceType) {
+      case 'WP': // White Pawn
+        if (toRow === fromRow - 1 && colDiff === 0 && !targetPiece) return true;
+        if (fromRow === 6 && toRow === 4 && colDiff === 0 && !targetPiece && !positions[to + 8]) return true;
+        if (toRow === fromRow - 1 && colDiff === 1 && targetPiece?.startsWith('B')) return true;
+        if (fromRow === 3 && toRow === 2 && colDiff === 1 && !targetPiece) {
+          if (
+            lastMove &&
+            lastMove.piece === 'BP' &&
+            lastMove.from === to + 8 && 
+            lastMove.to === from + 1 
+          ) {
+            return true;
+          }
+        }
+        return false;
+  
+      case 'BP': // Black Pawn
+        if (toRow === fromRow + 1 && colDiff === 0 && !targetPiece) return true;
+        if (fromRow === 1 && toRow === 3 && colDiff === 0 && !targetPiece && !positions[to - 8]) return true;
+        if (toRow === fromRow + 1 && colDiff === 1 && targetPiece?.startsWith('W')) return true;
+        if (fromRow === 4 && toRow === 5 && colDiff === 1 && !targetPiece) {
+          if (
+            lastMove &&
+            lastMove.piece === 'WP' &&
+            lastMove.from === to - 8 &&
+            lastMove.to === from - 1 
+          ) {
+            return true;
+          }
+        }
+        return false;
+  
+      case 'WR':
+      case 'BR': 
+        if ((fromRow === toRow || fromCol === toCol) && isPathClear(from, to, positions)) {
+          return !targetPiece || (turn === "white" ? targetPiece.startsWith('B') : targetPiece.startsWith('W'));
+        }
+        return false;
+  
+      case 'WN':
+      case 'BN': 
+        if ((rowDiff === 2 && colDiff === 1) || (rowDiff === 1 && colDiff === 2)) {
+          return !targetPiece || (turn === "white" ? targetPiece.startsWith('B') : targetPiece.startsWith('W'));
+        }
+        return false;
+  
+      case 'WB':
+      case 'BB': 
+        if (rowDiff === colDiff && isPathClear(from, to, positions)) {
+          return !targetPiece || (turn === "white" ? targetPiece.startsWith('B') : targetPiece.startsWith('W'));
+        }
+        return false;
+  
+      case 'WQ':
+      case 'BQ': 
+        if ((rowDiff === colDiff || fromRow === toRow || fromCol === toCol) && isPathClear(from, to, positions)) {
+          return !targetPiece || (turn === "white" ? targetPiece.startsWith('B') : targetPiece.startsWith('W'));
+        }
+        return false;
+  
+      case 'WK':
+      case 'BK': 
+        if (rowDiff <= 1 && colDiff <= 1) {
+          return !targetPiece || (turn === "white" ? targetPiece.startsWith('B') : targetPiece.startsWith('W'));
+        }
+        return false;
+  
+      default:
+        console.log("Piece type not recognized.");
+        return false;
+    }
+  };
+  
+  
+  // Helper function to check if the path is clear between two squares
+  const isPathClear = (from: number, to: number, positions: (string | null)[]): boolean => {
+    const fromRow = Math.floor(from / 8);
+    const fromCol = from % 8;
+    const toRow = Math.floor(to / 8);
+    const toCol = to % 8;
+  
+    const rowStep = toRow > fromRow ? 1 : toRow < fromRow ? -1 : 0;
+    const colStep = toCol > fromCol ? 1 : toCol < fromCol ? -1 : 0;
+  
+    let currentRow = fromRow + rowStep;
+    let currentCol = fromCol + colStep;
+  
+    while (currentRow !== toRow || currentCol !== toCol) {
+      const index = currentRow * 8 + currentCol;
+      if (positions[index] !== null) return false; // Path is not clear
+      currentRow += rowStep;
+      currentCol += colStep;
+    }
+  
+    return true; // Path is clear
+  };
+  
   const clickFunction = useCallback(
     (
       event: React.MouseEvent<SVGSVGElement>,
@@ -122,7 +254,6 @@ function App() {
     ) => {
       const target = event.currentTarget;
       const parentElement = target.parentElement;
-  
       if (!parentElement) {
         console.error("Parent element not found");
         return;
@@ -141,112 +272,103 @@ function App() {
       }
   
       const clickedId = parseInt(clickedIdMatch[0], 10);
-      //console.log("Clicked square ID:", clickedId);
+      console.log(`Clicked square ID: ${clickedId}`);
   
       if (activeId) {
-        const previousIdMatch = activeId.match(/[0-9]+/);
-        if (!previousIdMatch) {
-          console.error("Failed to extract previous ID from active ID");
-          return;
-        }
+        const previousId = parseInt(activeId.match(/[0-9]+/)![0], 10);
+        console.log(`Moving ${activePieceType} from ${previousId} to ${clickedId}`);
   
-        const previousId = parseInt(previousIdMatch[0], 10);
-        const currentSymbol = positions[previousId];
+        const fromRow = Math.floor(previousId / 8);
+        const toRow = Math.floor(clickedId / 8);
+        const fromCol = previousId % 8;
+        const toCol = clickedId % 8;
+        const colDiff = Math.abs(toCol - fromCol);
+        const targetPiece = positions[clickedId];
   
-        // Only move if the clicked square is a valid highlighted square
-        if (highlightedSquares.has(clickedId)) {
-          const [prevRow, prevCol] = [Math.floor(previousId / 8), previousId % 8];
-          const [clickedRow, clickedCol] = [Math.floor(clickedId / 8), clickedId % 8];
-          
-              // Check for pawn promotion
-          if (activePieceType && /^(WP|BP)/.test(activePieceType) && (clickedRow === 0 || clickedRow === 7)) {
-            // Promotion detected
-            //console.log("Promotion detected at square:", clickedId);
-          
-            const newPositions = [...positions];
-            newPositions[previousId] = null; // Clear the original pawn position
-            setPositions(newPositions); // Update state to reflect removal
-          
-            // Trigger promotion modal
-            triggerPromotion(clickedId, activePieceType); // Pass necessary arguments
-            return; // Exit to prevent further processing
+        // Validate the move based on the piece type and rules
+        if (activePieceType && isValidMove(activePieceType, previousId, clickedId, positions, turn, lastMove)) {
+          console.log("Valid move");
+  
+          // Handle en passant capture
+          if (activePieceType === 'WP' && fromRow === 3 && toRow === 2 && colDiff === 1 && !targetPiece) {
+            positions[clickedId + 8] = null; // Capture the black pawn
+          } else if (activePieceType === 'BP' && fromRow === 4 && toRow === 5 && colDiff === 1 && !targetPiece) {
+            positions[clickedId - 8] = null; // Capture the white pawn
           }
-          if (
-            activePieceType?.includes("Pawn") &&
-            Math.abs(clickedCol - prevCol) === 1 && // Diagonal move
-            Math.abs(clickedRow - prevRow) === 1 && // Moving one rank forward
-            !positions[clickedId] && // Destination square is empty
-            lastMove && // Ensure lastMove is available
-            lastMove.piece.includes("Pawn") && // Last move was a pawn move
-            Math.abs(lastMove.from - lastMove.to) === 16 && // The pawn moved 2 squares forward last turn
-            lastMove.to === posToIndex(prevRow, clickedCol) // The pawn to capture is on the correct square
-          ) {
-            // En passant capture
-            const enPassantCapturedPawnIndex = posToIndex(prevRow, clickedCol);
+  
+          // Handle promotion separately
+          if (activePieceType && /^(WP|BP)/.test(activePieceType) && (toRow === 0 || toRow === 7)) {
             const newPositions = [...positions];
-            newPositions[enPassantCapturedPawnIndex] = null; // Remove captured pawn
-            newPositions[previousId] = null; // Clear original position
-            newPositions[clickedId] = activePieceType; // Move to new position
+            newPositions[previousId] = null;
             setPositions(newPositions);
-          } else {
-            // Normal move
-            const newPositions = [...positions];
-            newPositions[previousId] = null; // Clear original position
-            newPositions[clickedId] = activePieceType; // Move to new position
-            setPositions(newPositions);
+  
+            triggerPromotion(clickedId, activePieceType);
+            return;
           }
-        
-          // Update state
+  
+          // Handle capturing logic
+          if (positions[clickedId] !== null) {
+            if (
+              (turn === "white" && positions[clickedId]?.startsWith("B")) ||
+              (turn === "black" && positions[clickedId]?.startsWith("W"))
+            ) {
+              setTaken((prev) => {
+                const newTaken = [...prev];
+                const capturedPiece = positions[clickedId];
+                const index = newTaken.findIndex((item) => item === null);
+                if (index !== -1) newTaken[index] = capturedPiece;
+                return newTaken;
+              });
+            }
+          }
+  
+          // Update the board for normal moves or captures
+          const newPositions = [...positions];
+          newPositions[previousId] = null;
+          newPositions[clickedId] = activePieceType;
+          setPositions(newPositions);
+  
+          // Reset states after a valid move or capture
           setActiveId(null);
           setActivePieceType(null);
           setHighlightedSquares(new Set());
           setTurn(turn === "white" ? "black" : "white");
           setLastMove({ from: previousId, to: clickedId, piece: activePieceType! });
-        } else if (
-          positions[clickedId] &&
-          ((turn === "white" && positions[clickedId]!.startsWith("W")) ||
-            (turn === "black" && positions[clickedId]!.startsWith("B")))
-        ) {
-          // Transfer active status if a new piece of the same color is clicked
-          //console.log("Transferring active piece status to:", positions[clickedId]);
-          setActiveId(grandParentElement.id);
-          setActivePieceType(positions[clickedId]);
-          const newHighlightedSquares = getHighlightIndices(
-            grandParentElement.id,
-            positions,
-            positions[clickedId],
-            lastMove
-          );
-          setHighlightedSquares(new Set(newHighlightedSquares));
-          //console.log("New highlighted squares:", Array.from(newHighlightedSquares));
         } else {
-          // Deselect only if clicking on a non-highlighted square
-          //console.log("Deselecting piece.");
+          // Deselect if the move is invalid
+          console.log("Invalid move detected");
           setActiveId(null);
           setActivePieceType(null);
           setHighlightedSquares(new Set());
         }
+      } else if (
+        positions[clickedId] &&
+        ((turn === "white" && positions[clickedId]!.startsWith("W")) ||
+          (turn === "black" && positions[clickedId]!.startsWith("B")))
+      ) {
+        // Select a piece if it's the player's turn
+        setActiveId(grandParentElement.id);
+        setActivePieceType(positions[clickedId]);
+        const newHighlightedSquares = getHighlightIndices(
+          grandParentElement.id,
+          positions,
+          positions[clickedId],
+          lastMove
+        );
+        setHighlightedSquares(new Set(newHighlightedSquares));
       } else {
-        // Select a piece if clicked on a user's piece
-        const targetPiece = positions[clickedId];
-        if (
-          targetPiece &&
-          ((turn === "white" && targetPiece.startsWith("W")) || (turn === "black" && targetPiece.startsWith("B")))
-        ) {
-          //console.log("Selecting new piece:", targetPiece, "at ID:", clickedId);
-          setActiveId(grandParentElement.id);
-          setActivePieceType(targetPiece);
-          const newHighlightedSquares = getHighlightIndices(grandParentElement.id, positions, targetPiece, lastMove);
-          setHighlightedSquares(new Set(newHighlightedSquares));
-          //console.log("New highlighted squares:", Array.from(newHighlightedSquares));
-        } else {
-          //console.log("Cannot select this square.");
-        }
+        // Deselect if clicking on an empty square or invalid move
+        setActiveId(null);
+        setActivePieceType(null);
+        setHighlightedSquares(new Set());
       }
     },
-    [turn, activeId, positions, highlightedSquares, activePieceType, lastMove] // Add lastMove as a dependency
+    [turn, activeId, positions, highlightedSquares, activePieceType, lastMove]
   );
-
+  
+  
+  
+  
   const clickFunctionEmpty = useCallback(
     (
       event: React.MouseEvent<SVGSVGElement>,
@@ -276,27 +398,18 @@ function App() {
       }
       const currentId = parseInt(currentIdMatch[0], 10);
 
-      // console.log("Current ID:", currentId);
-      // console.log("Active ID:", activeId);
-      // console.log("Highlighted squares:", Array.from(highlightedSquares));
-      // console.log("Current turn:", turn);
-
       if (activeId && activePieceType) {
         if (highlightedSquares.has(currentId)) {
-          // Move the piece
-          //console.log("Moving active piece to empty highlighted square:", currentId);
           const previousId = parseInt(activeId.match(/[0-9]+/)![0], 10);
           const newPositions = [...positions];
-          newPositions[previousId] = null; // Clear the original square
-          newPositions[currentId] = activePieceType; // Move piece to new square
-          setPositions(newPositions); // Update positions state
-          setActiveId(null); // Clear the active ID
-          setActivePieceType(null); // Clear active piece type
-          setHighlightedSquares(new Set()); // Clear highlighted squares
-          setTurn(turn === "white" ? "black" : "white"); // Switch turn
-          setLastMove({ from: previousId, to: currentId, piece: activePieceType }); // Update last move
-        } else {
-          //console.log("Clicking on a non-highlighted square does nothing.");
+          newPositions[previousId] = null;
+          newPositions[currentId] = activePieceType;
+          setPositions(newPositions);
+          setActiveId(null);
+          setActivePieceType(null);
+          setHighlightedSquares(new Set());
+          setTurn(turn === "white" ? "black" : "white");
+          setLastMove({ from: previousId, to: currentId, piece: activePieceType });
         }
       } else {
         const targetPiece = positions[currentId];
@@ -304,85 +417,39 @@ function App() {
           targetPiece &&
           ((turn === "white" && targetPiece.startsWith("W")) || (turn === "black" && targetPiece.startsWith("B")))
         ) {
-         // console.log("Selecting new piece:", targetPiece, "at ID:", currentId);
           setActiveId(parentElement.id);
           setActivePieceType(targetPiece);
-          const newHighlightedSquares = getHighlightIndices(parentElement.id, positions, targetPiece, lastMove); // Pass lastMove
+          const newHighlightedSquares = getHighlightIndices(parentElement.id, positions, targetPiece, lastMove);
           setHighlightedSquares(new Set(newHighlightedSquares));
-          //console.log("New Highlighted Squares:", Array.from(newHighlightedSquares));
         } else {
-          //console.log("Cannot select this square: Empty or not your turn.");
-          setActiveId(null); // Deselect if clicking on an invalid square
+          setActiveId(null);
           setActivePieceType(null);
           setHighlightedSquares(new Set());
         }
       }
     },
-    [turn, activeId, positions, highlightedSquares, activePieceType, lastMove] // Add lastMove as dependency
+    [turn, activeId, positions, highlightedSquares, activePieceType, lastMove]
   );
 
-  // Initialize the board when the component mounts
   useEffect(() => {
     createBoard(flip, positions, setPositions);
     addPieces(
-        turn,
-        setTurn,
-        positions,
-        setPositions,
-        activeId,
-        setActiveId,
-        highlightedSquares,
-        setHighlightedSquares,
-        activePieceType,
-        setActivePieceType,
-        clickFunction, // Add clickFunction
-        clickFunctionEmpty, // Add clickFunctionEmpty
-        lastMove
+      turn,
+      setTurn,
+      positions,
+      setPositions,
+      activeId,
+      setActiveId,
+      highlightedSquares,
+      setHighlightedSquares,
+      activePieceType,
+      setActivePieceType,
+      clickFunction,
+      clickFunctionEmpty,
+      lastMove
     );
-  }, []); // Empty dependency array means this runs only once when the component mounts
+  }, []);
 
-  // Re-render pieces and update the board when positions or activeId change
-  useEffect(() => {
-    addPieces(
-        turn,
-        setTurn,
-        positions,
-        setPositions,
-        activeId,
-        setActiveId,
-        highlightedSquares,
-        setHighlightedSquares,
-        activePieceType,
-        setActivePieceType,
-        clickFunction, // Add clickFunction
-        clickFunctionEmpty, // Add clickFunctionEmpty
-        lastMove
-    );
-  }, [positions, activeId, turn]); // Added 'turn' to dependencies
-
-  // Handle changes when the board is flipped
-  useEffect(() => {
-    setTurn(flip ? "black" : "white");
-    createBoard(flip, positions, setPositions);
-    setTaken(Array(64).fill(null)); // Reset taken pieces when flip changes
-    addPieces(
-        turn,
-        setTurn,
-        positions,
-        setPositions,
-        activeId,
-        setActiveId,
-        highlightedSquares,
-        setHighlightedSquares,
-        activePieceType,
-        setActivePieceType,
-        clickFunction, // Add clickFunction
-        clickFunctionEmpty, // Add clickFunctionEmpty
-        lastMove
-    );
-  }, [flip]);
-
-  // Update game state when the turn changes
   useEffect(() => {
     addPieces(
       turn,
@@ -395,10 +462,49 @@ function App() {
       setHighlightedSquares,
       activePieceType,
       setActivePieceType,
-      clickFunction, // Add clickFunction
-      clickFunctionEmpty, // Add clickFunctionEmpty
+      clickFunction,
+      clickFunctionEmpty,
       lastMove
-  );
+    );
+  }, [positions, activeId, turn]);
+
+  useEffect(() => {
+    setTurn(flip ? "black" : "white");
+    createBoard(flip, positions, setPositions);
+    setTaken(Array(64).fill(null));
+    addPieces(
+      turn,
+      setTurn,
+      positions,
+      setPositions,
+      activeId,
+      setActiveId,
+      highlightedSquares,
+      setHighlightedSquares,
+      activePieceType,
+      setActivePieceType,
+      clickFunction,
+      clickFunctionEmpty,
+      lastMove
+    );
+  }, [flip]);
+
+  useEffect(() => {
+    addPieces(
+      turn,
+      setTurn,
+      positions,
+      setPositions,
+      activeId,
+      setActiveId,
+      highlightedSquares,
+      setHighlightedSquares,
+      activePieceType,
+      setActivePieceType,
+      clickFunction,
+      clickFunctionEmpty,
+      lastMove
+    );
     updateSentence(turn);
     setCheck(isCheck(positions, turn, lastMove));
     setHighlightedSquares(new Set());
@@ -411,17 +517,21 @@ function App() {
         defaultChecked={flip}
         onChange={() => {
           setFlip(!flip);
-          handleNewGame()
+          handleNewGame();
         }}
       />
       <label htmlFor="flip">Play as Black</label>
       <p id="turnDisplay"></p>
       <p id="isCheck">{check ? "Check" : ""}</p>
       <button onClick={handleNewGame}>New Game</button>
-      {showPromotionModal && (
-      <PromotionModal onPromote={handlePromotionChoice} />
-    )}
-      <TakenPieces positions={positions} />
+      {isPromotion && (
+        <PromotionSelector onSelect={handlePromotionSelect} color={promotionColor} />
+      )}
+      <TakenPieces 
+        positions={positions} 
+        isPromotion={isPromotion} 
+        promotingPawnType={promotingPawnType}  
+      />
 
       <table id="chessboard">
         {/* Render chessboard here */}
