@@ -1,6 +1,6 @@
-import React from 'react';
+// PromotionSelector.tsx
 
-// Import SVG icons
+import React from 'react';
 import { ReactComponent as BBishopIcon } from "./Chess_bdt45.svg";
 import { ReactComponent as WBishopIcon } from "./Chess_blt45.svg";
 import { ReactComponent as BKnightIcon } from "./Chess_ndt45.svg";
@@ -16,25 +16,19 @@ interface PromotionSelectorProps {
 }
 
 const PromotionSelector: React.FC<PromotionSelectorProps> = ({ onSelect, color }) => {
-  // Determine the correct set of icons based on the color prop
-  const BishopIcon = color === 'white' ? WBishopIcon : BBishopIcon;
-  const KnightIcon = color === 'white' ? WKnightIcon : BKnightIcon;
-  const QueenIcon = color === 'white' ? WQueenIcon : BQueenIcon;
-  const RookIcon = color === 'white' ? WRookIcon : BRookIcon;
-
   return (
     <div className="promotion-selector">
       <button onClick={() => onSelect('Q')}>
-        <QueenIcon />
+        {color === 'white' ? <WQueenIcon /> : <BQueenIcon />}
       </button>
       <button onClick={() => onSelect('R')}>
-        <RookIcon />
+        {color === 'white' ? <WRookIcon /> : <BRookIcon />}
       </button>
       <button onClick={() => onSelect('B')}>
-        <BishopIcon />
+        {color === 'white' ? <WBishopIcon /> : <BBishopIcon />}
       </button>
       <button onClick={() => onSelect('N')}>
-        <KnightIcon />
+        {color === 'white' ? <WKnightIcon /> : <BKnightIcon />}
       </button>
     </div>
   );
