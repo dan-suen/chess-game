@@ -7,6 +7,7 @@ import addPieces from "./hooks/addPieces";
 import { isCheck } from "./hooks/gamelogic";
 import TakenPieces from "./components/takenPieces";
 import getHighlightIndices from "./hooks/getHighlightIndices";
+import PromotionModal from "./components/PromotionModal";
 
 const initialPositions: (string | null)[] = [
   'WRook', 'WKnight', 'WBishop', 'WQueen', 'WKing', 'WBishop', 'WKnight', 'WRook',
@@ -29,7 +30,9 @@ function App() {
   const [highlightedSquares, setHighlightedSquares] = useState<Set<number>>(new Set());
   const [activePieceType, setActivePieceType] = useState<string | null>(null);
   const [lastMove, setLastMove] = useState<{ from: number; to: number; piece: string } | null>(null);
-
+  const [showPromotionModal, setShowPromotionModal] = useState(false);
+  const [promotionSquare, setPromotionSquare] = useState<number | null>(null);
+  
   // Utility function for calculating indices
   const posToIndex = (row: number, col: number): number => row * 8 + col;
   const handleNewGame = () => {
@@ -63,6 +66,35 @@ function App() {
       );
     }, 0); // Use a timeout to ensure state updates apply before recreating the board
   };
+
+const handlePromotionChoice = (choice: string) => {
+  if (promotionSquare !== null && activePieceType) {
+    const newPieceType = activePieceType.startsWith("W")
+      ? `W${choice}`
+      : `B${choice}`;
+
+    const newPositions = [...positions];
+    newPositions[promotionSquare] = newPieceType;
+    setPositions(newPositions);
+    setShowPromotionModal(false);
+    setPromotionSquare(null);
+
+    // Change turn after promotion
+    setTurn(turn === "white" ? "black" : "white");
+      
+    // Clear active states
+    setActiveId(null);
+    setActivePieceType(null);
+  }
+};
+
+const triggerPromotion = (clickedId: number) => {
+    const newPositions = [...positions];
+    newPositions[clickedId] = null; // Remove the old pawn immediately
+    setPositions(newPositions); // Update state to reflect removal
+    setPromotionSquare(clickedId); // Set the promotion square
+    setShowPromotionModal(true); // Show the promotion modal
+};
   const clickFunction = useCallback(
     (
       event: React.MouseEvent<SVGSVGElement>,
@@ -115,7 +147,13 @@ function App() {
         if (highlightedSquares.has(clickedId)) {
           const [prevRow, prevCol] = [Math.floor(previousId / 8), previousId % 8];
           const [clickedRow, clickedCol] = [Math.floor(clickedId / 8), clickedId % 8];
-        
+          
+              // Check for pawn promotion
+          if (activePieceType && /^(WP|BP)/.test(activePieceType) && (clickedRow === 0 || clickedRow === 7)) {
+            // Trigger promotion modal here
+            triggerPromotion(clickedId);
+            return; // Exit the function to prevent further processing
+          }
           if (
             activePieceType?.includes("Pawn") &&
             Math.abs(clickedCol - prevCol) === 1 && // Diagonal move
@@ -363,6 +401,9 @@ function App() {
       <p id="turnDisplay"></p>
       <p id="isCheck">{check ? "Check" : ""}</p>
       <button onClick={handleNewGame}>New Game</button>
+      {showPromotionModal && (
+      <PromotionModal onPromote={handlePromotionChoice} />
+    )}
       <TakenPieces positions={positions} />
 
       <table id="chessboard">
