@@ -26,8 +26,9 @@ type ClickFunctionType = (
     highlightedSquares: Set<number>,
     setHighlightedSquares: React.Dispatch<React.SetStateAction<Set<number>>>,
     activePieceType: string | null,
-    setActivePieceType: React.Dispatch<React.SetStateAction<string | null>>
-) => void;
+    setActivePieceType: React.Dispatch<React.SetStateAction<string | null>>,
+    lastMove: { from: number; to: number; piece: string } | null
+  ) => void;
 
 const map: Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
     'BB1': BBishopIcon,
@@ -77,7 +78,8 @@ const addPieces = (
     activePieceType: string | null,
     setActivePieceType: React.Dispatch<React.SetStateAction<string | null>>,
     clickFunction: ClickFunctionType,
-    clickFunctionEmpty: ClickFunctionType
+    clickFunctionEmpty: ClickFunctionType,
+    lastMove: { from: number; to: number; piece: string } | null 
 ) => {
     positions.forEach((element: string | null, index: number) => {
         const targetId = `cell-${index}`;
@@ -110,9 +112,9 @@ const addPieces = (
                     <IconComponent
                         onClick={(event: React.MouseEvent<SVGSVGElement>) => {
                             if (element) {
-                                clickFunction(event, turn, setTurn, activeId, setActiveId, positions, setPositions, highlightedSquares, setHighlightedSquares, activePieceType, setActivePieceType);
+                                clickFunction(event, turn, setTurn, activeId, setActiveId, positions, setPositions, highlightedSquares, setHighlightedSquares, activePieceType, setActivePieceType, lastMove);
                             } else {
-                                clickFunctionEmpty(event, turn, setTurn, activeId, setActiveId, positions, setPositions, highlightedSquares, setHighlightedSquares, activePieceType, setActivePieceType);
+                                clickFunctionEmpty(event, turn, setTurn, activeId, setActiveId, positions, setPositions, highlightedSquares, setHighlightedSquares, activePieceType, setActivePieceType, lastMove);
                             }
                         }}
                         key={`${element}-${index}`}

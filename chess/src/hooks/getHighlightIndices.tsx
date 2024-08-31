@@ -1,9 +1,10 @@
 const getHighlightIndices = function (
   activeId: string | null,
   positions: (string | null)[],
-  activeElement: string | null
+  activeElement: string | null,
+  lastMove: { from: number; to: number; piece: string } | null // Include lastMove for en passant
 ): number[] {
-  console.log("getHighlightIndices called with:", { activeId, positions, activeElement });
+  console.log("getHighlightIndices called with:", { activeId, positions, activeElement, lastMove });
   if (!activeId || !activeElement) return [];
 
   const activeIndex = parseInt(activeId.match(/[0-9]+/)![0], 10);
@@ -155,6 +156,22 @@ const getHighlightIndices = function (
         }
       }
     });
+    if (
+      lastMove &&
+      /^(WP|BP)/.test(lastMove.piece) && // Last move was a pawn
+      Math.abs(lastMove.from - lastMove.to) === 16 // The pawn moved 2 squares forward last turn
+    ) {
+      const [lastRow, lastCol] = indexToPos(lastMove.to);
+      const enPassantRow = isBlackPawn ? 4 : 3; // Row where en passant is possible for black and white
+      if (
+        row === enPassantRow && // The capturing pawn is on the correct row
+        Math.abs(lastCol - col) === 1 && // The pawns are adjacent
+        lastRow === row // The opponent's pawn is on the same row
+      ) {
+        const enPassantCaptureIndex = posToIndex(row + direction, lastCol);
+        moves.push(enPassantCaptureIndex); // Highlight en passant capture move
+      }
+    }
 
     return moves;
   };
@@ -181,3 +198,4 @@ const getHighlightIndices = function (
 };
 
 export default getHighlightIndices;
+
