@@ -1,5 +1,5 @@
 import "./App.css";
-import { useState, useEffect, useCallback } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import Toggle from "react-toggle";
 import createBoard from "./hooks/createBoard";
 import updateSentence from "./hooks/updateSentence";
@@ -49,7 +49,22 @@ function App() {
     setHighlightedSquares(new Set());
     setCheck(false);
     setLastMove(null);
-
+    WP1Ref.current = false;
+    WP2Ref.current = false;
+    WP3Ref.current = false;
+    WP4Ref.current = false;
+    WP5Ref.current = false;
+    WP6Ref.current = false;
+    WP7Ref.current = false;
+    WP8Ref.current = false;
+    BP1Ref.current = false;
+    BP2Ref.current = false;
+    BP3Ref.current = false;
+    BP4Ref.current = false;
+    BP5Ref.current = false;
+    BP6Ref.current = false;
+    BP7Ref.current = false;
+    BP8Ref.current = false;
     setTimeout(() => {
       createBoard(flip, initialPositions, setPositions);
       addPieces(
@@ -70,54 +85,67 @@ function App() {
     }, 0);
   };
 
+  const WP1Ref = useRef<boolean>(false);
+  const WP2Ref = useRef<boolean>(false);
+  const WP3Ref = useRef<boolean>(false);
+  const WP4Ref = useRef<boolean>(false);
+  const WP5Ref = useRef<boolean>(false);
+  const WP6Ref = useRef<boolean>(false);
+  const WP7Ref = useRef<boolean>(false);
+  const WP8Ref = useRef<boolean>(false);
+  
+  const BP1Ref = useRef<boolean>(false);
+  const BP2Ref = useRef<boolean>(false);
+  const BP3Ref = useRef<boolean>(false);
+  const BP4Ref = useRef<boolean>(false);
+  const BP5Ref = useRef<boolean>(false);
+  const BP6Ref = useRef<boolean>(false);
+  const BP7Ref = useRef<boolean>(false);
+  const BP8Ref = useRef<boolean>(false);
+  
+  const refs = {
+    WP1Ref, WP2Ref, WP3Ref, WP4Ref, WP5Ref, WP6Ref, WP7Ref, WP8Ref,
+    BP1Ref, BP2Ref, BP3Ref, BP4Ref, BP5Ref, BP6Ref, BP7Ref, BP8Ref
+  };
   const handlePromotionSelect = (choice: string) => {
     console.log("handlePromotionSelect triggered with choice:", choice);
   
     if (promotionSquare !== null && activePieceType) {
       const basePieceName = activePieceType.startsWith("W") ? `W${choice}` : `B${choice}`;
   
-      // Create a new copy of the positions array
+      // Update positions to replace the pawn with the promoted piece
       const newPositions = [...positions];
+      newPositions[promotionSquare] = basePieceName; // Place the promoted piece
   
-      // Replace the pawn with the promoted piece at the promotion square
-      newPositions[promotionSquare] = basePieceName;
+      // Set the corresponding ref to true for promoted pawns
+      const refName = `${activePieceType}Ref` as keyof typeof refs;
+      if (refs[refName]) refs[refName].current = true;
   
-      // Remove the pawn from its original position
-      const promotingPawnIndex = positions.indexOf(activePieceType);
+      // If the pawn was captured and promoted, find its original position and clear it
+      const pawnIndex = positions.indexOf(activePieceType);
+      if (pawnIndex !== -1) newPositions[pawnIndex] = null; // Clear the pawn from its original position
   
-      // Check if the pawn's position is found and remove it
-      if (promotingPawnIndex !== -1 && promotingPawnIndex !== promotionSquare) {
-        newPositions[promotingPawnIndex] = null; // Clear the pawn from its original position
-      }
+      setPositions(newPositions); // Update the state with the new positions
   
-      // Update the state with the new positions
-      setPositions(newPositions);
-  
-      console.log("Updated positions array after promotion:", newPositions);
-  
-      // Reset promotion-related state after state updates
       setTimeout(() => {
         setShowPromotionModal(false);
         setTurn(turn === "white" ? "black" : "white");
-        setPromotionSquare(null);
+        setPromotionSquare(null); // Reset promotion square
         setActiveId(null);
         setActivePieceType(null);
         setHighlightedSquares(new Set());
         setIsPromotion(false);
   
-        // Call findTaken before resetting promotingPawnType
         console.log("Promoting pawn type before calling findTaken:", promotingPawnType);
-        findTaken(newPositions, setTaken, false, promotingPawnType); // Pass promotingPawnType correctly
+        findTaken(newPositions, setTaken, false, promotingPawnType, refs);
   
-        // Reset promotingPawnType only after using it
         console.log("Resetting promotingPawnType to null.");
-        setPromotingPawnType(null);
+        setPromotingPawnType(null); // Reset promotingPawnType
       }, 100); // Slight delay ensures state updates apply correctly
     } else {
       console.log("Promotion failed: promotionSquare or activePieceType is null.");
     }
   };
-  
   
   
   
@@ -313,9 +341,9 @@ function App() {
       }
   
       const clickedId = parseInt(clickedIdMatch[0], 10);
-      console.log(`Clicked square ID: ${clickedId}`);
-      console.log(`Current activeId: ${activeId}`);
-      console.log(`Current activePieceType: ${activePieceType}`);
+      // console.log(`Clicked square ID: ${clickedId}`);
+      // console.log(`Current activeId: ${activeId}`);
+      // console.log(`Current activePieceType: ${activePieceType}`);
   
       if (
         positions[clickedId] &&
@@ -531,7 +559,7 @@ function App() {
   }, []);
     useEffect(() => {
     console.log("Current Positions:", positions); // Log the positions passed to the component
-    findTaken(positions, setTaken, isPromotion, promotingPawnType); // Pass the correct number of arguments
+    findTaken(positions, setTaken, isPromotion, promotingPawnType, refs); // Pass the correct number of arguments
     }, [positions, isPromotion, promotingPawnType]);
 
   useEffect(() => {
@@ -631,6 +659,10 @@ function App() {
         positions={positions} 
         isPromotion={isPromotion} 
         promotingPawnType={promotingPawnType}  
+        refs={{
+          WP1Ref, WP2Ref, WP3Ref, WP4Ref, WP5Ref, WP6Ref, WP7Ref, WP8Ref,
+          BP1Ref, BP2Ref, BP3Ref, BP4Ref, BP5Ref, BP6Ref, BP7Ref, BP8Ref
+        }}
       />
 
       <table id="chessboard">
