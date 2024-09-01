@@ -107,62 +107,61 @@ function App() {
     WP1Ref, WP2Ref, WP3Ref, WP4Ref, WP5Ref, WP6Ref, WP7Ref, WP8Ref,
     BP1Ref, BP2Ref, BP3Ref, BP4Ref, BP5Ref, BP6Ref, BP7Ref, BP8Ref
   };
-  const handlePromotionSelect = (choice: string) => {
-    console.log("handlePromotionSelect triggered with choice:", choice);
-  
-    if (promotionSquare !== null && activePieceType) {
-      const basePieceName = activePieceType.startsWith("W") ? `W${choice}` : `B${choice}`;
-  
-      // Update positions to replace the pawn with the promoted piece
-      const newPositions = [...positions];
-      newPositions[promotionSquare] = basePieceName; // Place the promoted piece
-  
-      // Set the corresponding ref to true for promoted pawns
-      const refName = `${activePieceType}Ref` as keyof typeof refs;
-      if (refs[refName]) refs[refName].current = true;
-  
-      // If the pawn was captured and promoted, find its original position and clear it
-      const pawnIndex = positions.indexOf(activePieceType);
-      if (pawnIndex !== -1) newPositions[pawnIndex] = null; // Clear the pawn from its original position
-  
-      setPositions(newPositions); // Update the state with the new positions
-  
-      setTimeout(() => {
-        setShowPromotionModal(false);
-        setTurn(turn === "white" ? "black" : "white");
-        setPromotionSquare(null); // Reset promotion square
-        setActiveId(null);
-        setActivePieceType(null);
-        setHighlightedSquares(new Set());
-        setIsPromotion(false);
-  
-        console.log("Promoting pawn type before calling findTaken:", promotingPawnType);
-        findTaken(newPositions, setTaken, false, promotingPawnType, refs);
-  
-        console.log("Resetting promotingPawnType to null.");
-        setPromotingPawnType(null); // Reset promotingPawnType
-      }, 100); // Slight delay ensures state updates apply correctly
-    } else {
-      console.log("Promotion failed: promotionSquare or activePieceType is null.");
+
+
+ const handlePromotionSelect = (choice: string) => {
+  console.log("handlePromotionSelect triggered with choice:", choice);
+
+  if (promotionSquare !== null && activePieceType) {
+    const basePieceName = activePieceType.startsWith("W") ? `W${choice}` : `B${choice}`;
+
+    // Update positions to replace the pawn with the promoted piece
+    const newPositions = [...positions];
+    newPositions[promotionSquare] = basePieceName; // Place the promoted piece
+
+    // Correctly clear the original pawn's position
+    const pawnIndex = positions.indexOf(activePieceType);
+    if (pawnIndex !== -1 && pawnIndex !== promotionSquare) {
+      newPositions[pawnIndex] = null; // Clear the pawn from its original position
     }
-  };
+
+    setPositions(newPositions); // Update the state with the new positions
+
+    setTimeout(() => {
+      setShowPromotionModal(false);
+      setTurn(turn === "white" ? "black" : "white");
+      setPromotionSquare(null); // Reset promotion square
+      setActiveId(null);
+      setActivePieceType(null);
+      setHighlightedSquares(new Set());
+      setIsPromotion(false);
+
+      console.log("Promoting pawn type before calling findTaken:", promotingPawnType);
+      findTaken(newPositions, setTaken, false, promotingPawnType, refs);
+
+      console.log("Resetting promotingPawnType to null.");
+      setPromotingPawnType(null); // Reset promotingPawnType
+    }, 100); // Slight delay ensures state updates apply correctly
+  } else {
+    console.log("Promotion failed: promotionSquare or activePieceType is null.");
+  }
+};
+
   
   
-  
-  const triggerPromotion = (clickedId: number, activePieceType: string) => {
-    // Set state related to promotion
-    setPromotionSquare(clickedId);
-    setActivePieceType(activePieceType);
-    setShowPromotionModal(true);
-    setIsPromotion(true);
-  
-    // Correctly set the promoting pawn type
-    setPromotingPawnType(activePieceType); // Set the promoting pawn type correctly
-    console.log("Set promotingPawnType to:", activePieceType); // Debug log
-    setPromotionColor(activePieceType.startsWith('W') ? 'white' : 'black');
-  };
-  
-  
+const triggerPromotion = (clickedId: number, activePieceType: string) => {
+  // Set state related to promotion
+  setPromotionSquare(clickedId);
+  setActivePieceType(activePieceType);
+  setShowPromotionModal(true);
+  setIsPromotion(true);
+
+  // Correctly set the promoting pawn type
+  setPromotingPawnType(activePieceType); // Set the promoting pawn type correctly
+  console.log("Set promotingPawnType to:", activePieceType); // Debug log
+  setPromotionColor(activePieceType.startsWith('W') ? 'white' : 'black');
+};
+
   
   
   const isValidMove = (
@@ -372,10 +371,10 @@ function App() {
   
           if (activePieceType && isValidMove(activePieceType, previousId, clickedId, positions, turn, lastMove)) {
             console.log("Valid move detected");
-  
+          
             const newPositions = [...positions];
             newPositions[previousId] = null; // Clear the pawn from its previous position
-  
+          
             // Check for pawn promotion
             if (
               (activePieceType.startsWith("WP") && toRow === 0) || 
@@ -384,17 +383,14 @@ function App() {
               triggerPromotion(clickedId, activePieceType); // Trigger promotion
               return; // Return early to avoid clearing state
             }
-  
+          
             newPositions[clickedId] = activePieceType; // Move the piece to the new position
             setPositions(newPositions);
-  
+          
             forceClearState(setActiveId, setActivePieceType, setHighlightedSquares, setPositions);
             setTurn(turn === "white" ? "black" : "white");
             setLastMove({ from: previousId, to: clickedId, piece: activePieceType });
-          } else {
-            console.log("Invalid move detected: clearing state.");
-            forceClearState(setActiveId, setActivePieceType, setHighlightedSquares, setPositions);
-          }
+          }          
         } else {
           console.log("Invalid selection or move: clearing state.");
           forceClearState(setActiveId, setActivePieceType, setHighlightedSquares, setPositions);
@@ -621,17 +617,17 @@ function App() {
     updateSentence(turn);
     setCheck(isCheck(positions, turn, lastMove));
     setHighlightedSquares(new Set());
+
+  }, [turn]); // Add `isPromotion` to dependencies
   
+  
+  useEffect(() => {
     if (!isPromotion) {
       setActiveId(null);
       setActivePieceType(null);
     }
-  
     console.log("State management check for promotion.");
-  }, [turn, isPromotion]); // Add `isPromotion` to dependencies
-  
-  
-  
+  }, [isPromotion]);
   
   useEffect(() => {
     console.log("Promotion square set to:", promotionSquare);
