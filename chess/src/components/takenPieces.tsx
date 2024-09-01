@@ -78,10 +78,14 @@ const findTaken = (
         return; // Do not count the promoting pawn
       }
 
+      // Exclude promoted pieces from being counted as taken
+      if (!pieceType && /^[WB][QRBN]\d*$/.test(piece)) {
+        console.log(`Promoted piece detected: ${piece}, excluding from taken count.`);
+        return; // Do not count the promoted piece
+      }
+
       if (pieceType && currentPieceCount[pieceType] !== undefined) {
         currentPieceCount[pieceType] -= 1;
-      } else if (!pieceType && /^[WB][QRBN]/.test(piece)) {
-        console.log(`Promoted piece detected: ${piece}, excluding from taken count.`);
       }
     }
   });
@@ -92,6 +96,7 @@ const findTaken = (
 
   setTaken(takenPieces);
 };
+
 
 // Component to display taken pieces
 const TakenPieces: React.FC<TakenPiecesProps> = ({ positions, isPromotion, promotingPawnType }) => {

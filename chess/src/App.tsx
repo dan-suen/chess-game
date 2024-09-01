@@ -76,30 +76,29 @@ function App() {
     if (promotionSquare !== null && activePieceType) {
       const basePieceName = activePieceType.startsWith("W") ? `W${choice}` : `B${choice}`;
     
-      // Log the current positions before updating
-      console.log("Current positions before promotion:", positions);
-      console.log("Promotion at square:", promotionSquare, "with new piece:", basePieceName);
-  
       // Update the positions array to replace the pawn with the promoted piece
       const newPositions = [...positions];
       newPositions[promotionSquare] = basePieceName; // Replace the pawn with the promoted piece
     
-      setPositions(newPositions); // Immediately update the state to apply the promotion
+      // Make sure to clear the original pawn's position
+      const promotingPawnIndex = positions.indexOf(activePieceType);
+      if (promotingPawnIndex !== -1) {
+        newPositions[promotingPawnIndex] = null; // Remove the pawn from its original position
+      }
   
-      // Log the updated positions after promotion
+      setPositions(newPositions); // Update the state to apply the promotion
+  
       console.log("Updated positions array after promotion:", newPositions);
-    
-      // Reset promotion-related state after a slight delay to avoid premature reset
-      setTimeout(() => {
-        setShowPromotionModal(false);
-        setTurn(turn === "white" ? "black" : "white");
-        setPromotionSquare(null); // Now reset `promotionSquare` after the promotion is done
-        setActiveId(null);
-        setActivePieceType(null);
-        setHighlightedSquares(new Set());
-        setIsPromotion(false);
-        setPromotingPawnType(null);
-      }, 100); // Slight delay ensures state updates apply correctly
+  
+      // Reset promotion-related state
+      setShowPromotionModal(false);
+      setTurn(turn === "white" ? "black" : "white");
+      setPromotionSquare(null); // Reset `promotionSquare` after the promotion is done
+      setActiveId(null);
+      setActivePieceType(null);
+      setHighlightedSquares(new Set());
+      setIsPromotion(false);
+      setPromotingPawnType(null);
     } else {
       console.log("Promotion failed: promotionSquare or activePieceType is null.");
     }
@@ -109,13 +108,16 @@ function App() {
   const triggerPromotion = (clickedId: number, activePieceType: string) => {
     console.log("Triggering promotion for:", clickedId, activePieceType);
   
-    setPromotionSquare(clickedId); // Set the square where promotion occurs
+    setPromotionSquare(clickedId); // Set the square for promotion
     setActivePieceType(activePieceType); // Set the type of the active piece (pawn)
     setShowPromotionModal(true); // Show the promotion modal
-    setIsPromotion(true); // Indicate that a promotion is in progress
-    setPromotingPawnType(activePieceType); // Store the type of the pawn being promoted
-    setPromotionColor(activePieceType.startsWith('W') ? 'white' : 'black'); // Set the color of the promoting piece
+    setIsPromotion(true);
+    setPromotingPawnType(activePieceType);
+    setPromotionColor(activePieceType.startsWith('W') ? 'white' : 'black');
+  
+    console.log("Promotion state set. Square:", clickedId, "Piece:", activePieceType);
   };
+  
   
   
   const isValidMove = (
@@ -340,7 +342,7 @@ function App() {
             const newPositions = [...positions];
             newPositions[previousId] = null; // Clear the pawn from its previous position
           
-            // Correct the promotion logic to handle named pawns
+            // Check for promotion
             if (
               (activePieceType.startsWith("WP") && toRow === 0) || 
               (activePieceType.startsWith("BP") && toRow === 7)
@@ -360,6 +362,7 @@ function App() {
             console.log("Invalid move detected: clearing state.");
             forceClearState(setActiveId, setActivePieceType, setHighlightedSquares, setPositions);
           }
+          
         } else {
           console.log("Invalid selection or move: clearing state.");
           forceClearState(setActiveId, setActivePieceType, setHighlightedSquares, setPositions);
