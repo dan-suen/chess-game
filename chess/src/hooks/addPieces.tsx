@@ -13,7 +13,6 @@ import { ReactComponent as WRookIcon } from "./Chess_rlt45.svg";
 import { ReactComponent as BPawnIcon } from "./Chess_pdt45.svg";
 import { ReactComponent as WPawnIcon } from "./Chess_plt45.svg";
 import { ReactComponent as EmptyIcon } from "./No_image.svg";
-import getHighlightIndices from './getHighlightIndices';
 
 type ClickFunctionType = (
     event: React.MouseEvent<SVGSVGElement>,

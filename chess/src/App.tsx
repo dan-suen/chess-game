@@ -1,12 +1,11 @@
 import "./App.css";
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import Toggle from "react-toggle";
 import createBoard from "./hooks/createBoard";
 import updateSentence from "./hooks/updateSentence";
 import addPieces from "./hooks/addPieces";
-import { isCheck } from "./hooks/gamelogic";
 import {findTaken, TakenPieces} from "./components/takenPieces";
-import getHighlightIndices from "./hooks/getHighlightIndices";
+import {isCheck, getHighlightIndices} from "./hooks/getHighlightIndices";
 import PromotionSelector from "./components/PromotionSelector";
 
 // Initial positions of pieces on the chessboard
@@ -124,8 +123,7 @@ function App() {
         newPositions[pawnIndex] = null; // Clear the pawn from its original position
       }
   
-      // Update the state with the new positions
-      setPositions(newPositions);
+      setPositions(newPositions); // Update the state with the new positions
   
       setTimeout(() => {
         setShowPromotionModal(false);
@@ -136,8 +134,9 @@ function App() {
         setHighlightedSquares(new Set());
         setIsPromotion(false);
   
+        // Correctly manage taken pieces after promotion
         console.log("Promoting pawn type before calling findTaken:", promotingPawnType);
-        findTaken(newPositions, setTaken, false, promotingPawnType, refs);
+        findTaken(newPositions, setTaken, false, null, refs); // Reset promotingPawnType to null to avoid counting it as taken
   
         console.log("Resetting promotingPawnType to null.");
         setPromotingPawnType(null); // Reset promotingPawnType
@@ -448,70 +447,37 @@ const triggerPromotion = (clickedId: number, activePieceType: string) => {
       if (highlightedSquares.has(currentId) && activeId && activePieceType) {
         const previousId = parseInt(activeId.match(/[0-9]+/)![0], 10);
         const newPositions = [...positions];
-        newPositions[previousId] = null;
-        newPositions[currentId] = activePieceType;
-        setPositions(newPositions);
-        console.log("Valid move executed from", previousId, "to", currentId);
-  
-        let shouldResetState = true; // Flag to control state reset
-  
-        const fromRow = Math.floor(previousId / 8);
-        const toRow = Math.floor(currentId / 8);
-        const colDiff = Math.abs((previousId % 8) - (currentId % 8));
         const targetPiece = positions[currentId];
   
-        // Check for special moves
-        if (activePieceType.startsWith('W') && fromRow === 3 && toRow === 2 && colDiff === 1 && !targetPiece) {
-          console.log("En passant capture by white pawn");
-          newPositions[currentId + 8] = null; // Remove the black pawn captured en passant
-          shouldResetState = false; // Prevent immediate reset to handle en passant
-        } else if (activePieceType.startsWith('B') && fromRow === 4 && toRow === 5 && colDiff === 1 && !targetPiece) {
-          console.log("En passant capture by black pawn");
-          newPositions[currentId - 8] = null; // Remove the white pawn captured en passant
-          shouldResetState = false; // Prevent immediate reset to handle en passant
-        }
-  
-        // Check for promotion and handle it
-        if (activePieceType && /^(WP|BP)/.test(activePieceType) && (toRow === 0 || toRow === 7)) {
-          console.log("Pawn promotion detected");
-          newPositions[previousId] = null; // Clear the pawn's old position
-          setPositions(newPositions);
-          triggerPromotion(currentId, activePieceType);
-          shouldResetState = false; // Prevent immediate reset to handle promotion
-        }
-  
-        // Handle captures
-        if (positions[currentId] !== null) {
+        if (targetPiece) {
+          // Handle captures
           if (
-            (turn === "white" && positions[currentId]?.startsWith("B")) ||
-            (turn === "black" && positions[currentId]?.startsWith("W"))
+            (turn === "white" && targetPiece.startsWith("B")) ||
+            (turn === "black" && targetPiece.startsWith("W"))
           ) {
-            console.log("Normal capture detected");
+            console.log("Capture detected");
             setTaken((prev) => {
               const newTaken = [...prev];
-              const capturedPiece = positions[currentId];
-              if (capturedPiece !== null) {
-                const index = newTaken.findIndex((item) => item === null);
-                if (index !== -1) newTaken[index] = capturedPiece; // Only assign if capturedPiece is not null
-              }
+              const index = newTaken.findIndex((item) => item === null);
+              if (index !== -1) newTaken[index] = targetPiece; // Update taken pieces list
               return newTaken;
             });
           }
         }
   
-        // Prepare for the next state updates
+        newPositions[previousId] = null; // Clear the previous piece's position
+        newPositions[currentId] = activePieceType; // Move the piece to the new position
+  
+        setPositions(newPositions); // Update positions state
+  
+        // Handle promotion, en passant, and other special moves as before...
+  
+        // Update turn and reset state
         setLastMove({ from: previousId, to: currentId, piece: activePieceType });
         setTurn(turn === "white" ? "black" : "white");
-  
-        // Reset state only if necessary
-        if (shouldResetState) {
-          setTimeout(() => {
-            console.log("Resetting state after move");
-            setActiveId(null);
-            setActivePieceType(null);
-            setHighlightedSquares(new Set());
-          }, 50); // Slight delay to ensure all updates are properly processed
-        }        
+        setActiveId(null);
+        setActivePieceType(null);
+        setHighlightedSquares(new Set());
       } else {
         // Handle cases when no move is executed
         const targetPiece = positions[currentId];
@@ -524,7 +490,7 @@ const triggerPromotion = (clickedId: number, activePieceType: string) => {
           const newHighlightedSquares = getHighlightIndices(parentElement.id, positions, targetPiece, lastMove);
           setHighlightedSquares(new Set(newHighlightedSquares));
         } else {
-          console.log("this also happened")
+          console.log("Invalid selection or move: clearing state.");
           setActiveId(null);
           setActivePieceType(null);
           setHighlightedSquares(new Set());
@@ -535,8 +501,10 @@ const triggerPromotion = (clickedId: number, activePieceType: string) => {
   );
   
   
+  
 
   useEffect(() => {
+    console.log("Initializing board and pieces.");
     createBoard(flip, positions, setPositions);
     addPieces(
       turn,
@@ -554,10 +522,14 @@ const triggerPromotion = (clickedId: number, activePieceType: string) => {
       lastMove
     );
   }, []);
-    useEffect(() => {
-    console.log("Current Positions:", positions); // Log the positions passed to the component
-    findTaken(positions, setTaken, isPromotion, promotingPawnType, refs); // Pass the correct number of arguments
-    }, [positions, isPromotion, promotingPawnType]);
+  
+  const memoizedRefs = useMemo(() => refs, [refs.WP1Ref.current, refs.WP2Ref.current, refs.WP3Ref.current, /* include all refs here */]);
+
+useEffect(() => {
+  console.log("Current Positions:", positions); // Log the positions passed to the component
+  findTaken(positions, setTaken, isPromotion, promotingPawnType, memoizedRefs);
+}, [positions, isPromotion, promotingPawnType, memoizedRefs]); 
+  
 
   useEffect(() => {
     addPieces(
