@@ -26,7 +26,9 @@ type ClickFunctionType = (
     setHighlightedSquares: React.Dispatch<React.SetStateAction<Set<number>>>,
     activePieceType: string | null,
     setActivePieceType: React.Dispatch<React.SetStateAction<string | null>>,
-    lastMove: { from: number; to: number; piece: string } | null
+    lastMove: { from: number; to: number; piece: string } | null,
+    setLastMove: React.Dispatch<React.SetStateAction<{ from: number; to: number; piece: string } | null>>,
+    setTaken: React.Dispatch<React.SetStateAction<string[]>>
   ) => void;
 
   const baseMap: Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
@@ -54,18 +56,20 @@ const getIconComponent = (piece: string | null) => {
 // Updated addPieces function
 const addPieces = (
     turn: "black" | "white",
-    setTurn: React.Dispatch<React.SetStateAction<"black" | "white">>,
-    positions: (string | null)[],
-    setPositions: React.Dispatch<React.SetStateAction<(string | null)[]>>,
-    activeId: string | null,
-    setActiveId: React.Dispatch<React.SetStateAction<string | null>>,
-    highlightedSquares: Set<number>,
-    setHighlightedSquares: React.Dispatch<React.SetStateAction<Set<number>>>,
-    activePieceType: string | null,
-    setActivePieceType: React.Dispatch<React.SetStateAction<string | null>>,
-    clickFunction: ClickFunctionType,
-    clickFunctionEmpty: ClickFunctionType,
-    lastMove: { from: number; to: number; piece: string } | null 
+  setTurn: React.Dispatch<React.SetStateAction<"black" | "white">>,
+  positions: (string | null)[],
+  setPositions: React.Dispatch<React.SetStateAction<(string | null)[]>>,
+  activeId: string | null,
+  setActiveId: React.Dispatch<React.SetStateAction<string | null>>,
+  highlightedSquares: Set<number>,
+  setHighlightedSquares: React.Dispatch<React.SetStateAction<Set<number>>>,
+  activePieceType: string | null,
+  setActivePieceType: React.Dispatch<React.SetStateAction<string | null>>,
+  clickFunction: ClickFunctionType,
+  clickFunctionEmpty: ClickFunctionType,
+  lastMove: { from: number; to: number; piece: string } | null,
+  setLastMove: React.Dispatch<React.SetStateAction<{ from: number; to: number; piece: string } | null>>, // Add this
+  setTaken: React.Dispatch<React.SetStateAction<string[]>> // Add this
 ) => {
     positions.forEach((element: string | null, index: number) => {
         const targetId = `cell-${index}`;
@@ -98,9 +102,35 @@ const addPieces = (
                     <IconComponent
                         onClick={(event: React.MouseEvent<SVGSVGElement>) => {
                             if (element) {
-                                clickFunction(event, turn, setTurn, activeId, setActiveId, positions, setPositions, highlightedSquares, setHighlightedSquares, activePieceType, setActivePieceType, lastMove);
+                                clickFunction( event,
+                                    turn,
+                                    setTurn,
+                                    activeId,
+                                    setActiveId,
+                                    positions,
+                                    setPositions,
+                                    highlightedSquares,
+                                    setHighlightedSquares,
+                                    activePieceType,
+                                    setActivePieceType,
+                                    lastMove,
+                                    setLastMove,
+                                    setTaken);
                             } else {
-                                clickFunctionEmpty(event, turn, setTurn, activeId, setActiveId, positions, setPositions, highlightedSquares, setHighlightedSquares, activePieceType, setActivePieceType, lastMove);
+                                clickFunctionEmpty( event,
+                                    turn,
+                                    setTurn,
+                                    activeId,
+                                    setActiveId,
+                                    positions,
+                                    setPositions,
+                                    highlightedSquares,
+                                    setHighlightedSquares,
+                                    activePieceType,
+                                    setActivePieceType,
+                                    lastMove,
+                                    setLastMove,
+                                    setTaken);
                             }
                         }}
                         key={`${element}-${index}`}

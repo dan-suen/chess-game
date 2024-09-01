@@ -38,6 +38,7 @@ function App() {
   
   // Utility function for calculating indices
   const posToIndex = (row: number, col: number): number => row * 8 + col;
+  const opponentTurn = turn === "white" ? "black" : "white";
 
   const handleNewGame = () => {
     setPositions([...initialPositions]);
@@ -79,7 +80,9 @@ function App() {
         setActivePieceType,
         clickFunction,
         clickFunctionEmpty,
-        null
+        null,
+        setLastMove, // Ensure setLastMove is passed correctly
+        setTaken 
       );
     }, 0);
   };
@@ -428,10 +431,12 @@ const triggerPromotion = (clickedId: number, activePieceType: string) => {
       setHighlightedSquares: React.Dispatch<React.SetStateAction<Set<number>>>,
       activePieceType: string | null,
       setActivePieceType: React.Dispatch<React.SetStateAction<string | null>>,
-      lastMove: { from: number; to: number; piece: string } | null
+      lastMove: { from: number; to: number; piece: string } | null,
+      setLastMove: React.Dispatch<React.SetStateAction<{ from: number; to: number; piece: string } | null>>,
+      setTaken: React.Dispatch<React.SetStateAction<string[]>>
     ) => {
       const parentElement = event.currentTarget.parentElement?.parentElement;
-  
+
       if (!parentElement || !parentElement.id) {
         console.error("Parent element or its ID not found.");
         return;
@@ -450,47 +455,80 @@ const triggerPromotion = (clickedId: number, activePieceType: string) => {
         const newPositions = [...positions];
         const targetPiece = positions[currentId];
   
-        if (targetPiece) {
-          // Handle captures
-          if (
-            (turn === "white" && targetPiece.startsWith("B")) ||
-            (turn === "black" && targetPiece.startsWith("W"))
-          ) {
-            console.log("Capture detected");
+        // Determine direction and index for the "en passant" captured pawn
+        const pawnDirection = activePieceType.startsWith("W") ? -1 : 1;
+        const enPassantCapturedPawnIndex = currentId - 8 * pawnDirection;
+  
+        console.log("Checking 'en passant' conditions:", {
+          activePieceType,
+          targetPiece,
+          currentId,
+          previousId,
+          enPassantCapturedPawnIndex,
+          lastMove,
+        });
+  
+        // Corrected conditions for "en passant"
+        if (
+          (activePieceType.startsWith("WP") || activePieceType.startsWith("BP")) && // Must be a pawn
+          !targetPiece && // The target square is empty
+          Math.abs((currentId % 8) - (previousId % 8)) === 1 && // Move is to an adjacent column
+          lastMove && // A valid last move exists
+          lastMove.piece.startsWith(turn === "white" ? "B" : "W") && // Last move was an opponent's pawn
+          Math.abs(lastMove.from - lastMove.to) === 16 && // The opponent's pawn moved two squares last move
+          lastMove.to === enPassantCapturedPawnIndex // The captured pawn is in the correct location
+        ) {
+          console.log("Valid 'en passant' conditions met.");
+  
+          const capturedPawn = newPositions[enPassantCapturedPawnIndex];
+          console.log("Captured pawn for 'en passant':", capturedPawn);
+  
+          if (capturedPawn) {
+            newPositions[enPassantCapturedPawnIndex] = null;
+            console.log("Captured pawn removed from board at index:", enPassantCapturedPawnIndex);
+  
+            // Update the list of taken pieces
             setTaken((prev) => {
-              const newTaken = [...prev];
-              const index = newTaken.findIndex((item) => item === null);
-              if (index !== -1) newTaken[index] = targetPiece; // Update taken pieces list
-              return newTaken;
+              const updatedTaken = [...prev, capturedPawn];
+              console.log("Updated taken pieces list:", updatedTaken);
+              return updatedTaken;
             });
+  
+            console.log("Captured pawn added to taken pieces:", capturedPawn);
+          } else {
+            console.warn("No pawn found to capture via 'en passant' at index:", enPassantCapturedPawnIndex);
           }
+        } else {
+          console.log("Not an 'en passant' move or conditions not met.");
         }
   
-        newPositions[previousId] = null; // Clear the previous piece's position
+        // Move the capturing pawn to the new position
+        newPositions[previousId] = null;
+        newPositions[currentId] = activePieceType;
+        setPositions(newPositions);
   
-        // Check for pawn promotion
+        // Check for pawn promotion after the move
         const toRow = Math.floor(currentId / 8);
         if (
-          (activePieceType.startsWith("WP") && toRow === 0) || // White pawn promotion
-          (activePieceType.startsWith("BP") && toRow === 7)   // Black pawn promotion
+          (activePieceType.startsWith("WP") && toRow === 0) ||
+          (activePieceType.startsWith("BP") && toRow === 7)
         ) {
-          triggerPromotion(currentId, activePieceType); // Trigger promotion
-          return; // Return early to avoid clearing state
+          setPromotionSquare(currentId);
+          setShowPromotionModal(true);
+          setIsPromotion(true);
+          setPromotingPawnType(activePieceType);
+          setPromotionColor(activePieceType.startsWith('W') ? 'white' : 'black');
+          console.log("Pawn promotion triggered for piece:", activePieceType);
+          return;
         }
   
-        newPositions[currentId] = activePieceType; // Move the piece to the new position
-        setPositions(newPositions); // Update positions state
-  
-        // Handle promotion, en passant, and other special moves as before...
-  
-        // Update turn and reset state
+        // Update game state
         setLastMove({ from: previousId, to: currentId, piece: activePieceType });
         setTurn(turn === "white" ? "black" : "white");
         setActiveId(null);
         setActivePieceType(null);
         setHighlightedSquares(new Set());
       } else {
-        // Handle cases when no move is executed
         const targetPiece = positions[currentId];
         if (
           targetPiece &&
@@ -510,27 +548,25 @@ const triggerPromotion = (clickedId: number, activePieceType: string) => {
     },
     [turn, activeId, positions, highlightedSquares, activePieceType, lastMove]
   );
-  
-  
-  
-
   useEffect(() => {
     console.log("Initializing board and pieces.");
     createBoard(flip, positions, setPositions);
     addPieces(
       turn,
-      setTurn,
-      positions,
-      setPositions,
-      activeId,
-      setActiveId,
-      highlightedSquares,
-      setHighlightedSquares,
-      activePieceType,
-      setActivePieceType,
-      clickFunction,
-      clickFunctionEmpty,
-      lastMove
+  setTurn,
+  positions,
+  setPositions,
+  activeId,
+  setActiveId,
+  highlightedSquares,
+  setHighlightedSquares,
+  activePieceType,
+  setActivePieceType,
+  clickFunction,
+  clickFunctionEmpty,
+  lastMove,
+  setLastMove, // Ensure setLastMove is passed correctly
+  setTaken //
     );
   }, []);
   
@@ -545,18 +581,20 @@ useEffect(() => {
   useEffect(() => {
     addPieces(
       turn,
-      setTurn,
-      positions,
-      setPositions,
-      activeId,
-      setActiveId,
-      highlightedSquares,
-      setHighlightedSquares,
-      activePieceType,
-      setActivePieceType,
-      clickFunction,
-      clickFunctionEmpty,
-      lastMove
+  setTurn,
+  positions,
+  setPositions,
+  activeId,
+  setActiveId,
+  highlightedSquares,
+  setHighlightedSquares,
+  activePieceType,
+  setActivePieceType,
+  clickFunction,
+  clickFunctionEmpty,
+  lastMove,
+  setLastMove, // Ensure setLastMove is passed correctly
+  setTaken //
     );
   }, [positions, activeId, turn]);
 
@@ -577,25 +615,29 @@ useEffect(() => {
       setActivePieceType,
       clickFunction,
       clickFunctionEmpty,
-      lastMove
+      lastMove,
+      setLastMove, // Ensure setLastMove is passed correctly
+      setTaken //
     );
   }, [flip]);
 
   useEffect(() => {
     addPieces(
       turn,
-      setTurn,
-      positions,
-      setPositions,
-      activeId,
-      setActiveId,
-      highlightedSquares,
-      setHighlightedSquares,
-      activePieceType,
-      setActivePieceType,
-      clickFunction,
-      clickFunctionEmpty,
-      lastMove
+  setTurn,
+  positions,
+  setPositions,
+  activeId,
+  setActiveId,
+  highlightedSquares,
+  setHighlightedSquares,
+  activePieceType,
+  setActivePieceType,
+  clickFunction,
+  clickFunctionEmpty,
+  lastMove,
+  setLastMove, // Ensure setLastMove is passed correctly
+  setTaken //
     );
   
     updateSentence(turn);

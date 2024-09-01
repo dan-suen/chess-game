@@ -62,11 +62,11 @@ const findTaken = (
   promotingPawnType: string | null,
   refs: Record<string, React.MutableRefObject<boolean>>
 ) => {
-  console.log("Find Taken - Initial State");
-  console.log("Positions:", positions);
-  console.log("Is Promotion:", isPromotion);
-  console.log("Promoting Pawn Type:", promotingPawnType);
-  console.log("Refs:", refs);
+  // console.log("Find Taken - Initial State");
+  // console.log("Positions:", positions);
+  // console.log("Is Promotion:", isPromotion);
+  // console.log("Promoting Pawn Type:", promotingPawnType);
+  // console.log("Refs:", refs);
 
   // Skip calculation if promotion is in progress
   if (isPromotion) {
@@ -112,7 +112,7 @@ const findTaken = (
   positions.forEach((piece) => {
     if (piece) {
       const pieceType = pieceMap[piece];
-      console.log(`Evaluating piece: ${piece}, type: ${pieceType}`);
+      //console.log(`Evaluating piece: ${piece}, type: ${pieceType}`);
 
       // Exclude promoted pawns
       if (pieceType?.includes('Pawn') && refs[`${piece}Ref`]?.current) {
