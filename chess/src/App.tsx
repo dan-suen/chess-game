@@ -105,6 +105,7 @@ function App() {
     }
   };
   
+  
   const triggerPromotion = (clickedId: number, activePieceType: string) => {
     console.log("Triggering promotion for:", clickedId, activePieceType);
   
