@@ -5,7 +5,7 @@ import createBoard from "./hooks/createBoard";
 import updateSentence from "./hooks/updateSentence";
 import addPieces from "./hooks/addPieces";
 import { isCheck } from "./hooks/gamelogic";
-import TakenPieces from "./components/takenPieces";
+import {findTaken, TakenPieces} from "./components/takenPieces";
 import getHighlightIndices from "./hooks/getHighlightIndices";
 import PromotionSelector from "./components/PromotionSelector";
 
@@ -25,7 +25,7 @@ function App() {
   const [positions, setPositions] = useState<(string | null)[]>(initialPositions);
   const [flip, setFlip] = useState<boolean>(false);
   const [turn, setTurn] = useState<"black" | "white">("white");
-  const [taken, setTaken] = useState<(string | null)[]>(Array(64).fill(null));
+  const [taken, setTaken] = useState<string[]>([]); 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [check, setCheck] = useState<boolean>(false);
   const [highlightedSquares, setHighlightedSquares] = useState<Set<number>>(new Set());
@@ -75,48 +75,65 @@ function App() {
   
     if (promotionSquare !== null && activePieceType) {
       const basePieceName = activePieceType.startsWith("W") ? `W${choice}` : `B${choice}`;
-    
-      // Update the positions array to replace the pawn with the promoted piece
+  
+      // Create a new copy of the positions array
       const newPositions = [...positions];
-      newPositions[promotionSquare] = basePieceName; // Replace the pawn with the promoted piece
-    
-      // Make sure to clear the original pawn's position
+  
+      // Replace the pawn with the promoted piece at the promotion square
+      newPositions[promotionSquare] = basePieceName;
+  
+      // Remove the pawn from its original position
       const promotingPawnIndex = positions.indexOf(activePieceType);
-      if (promotingPawnIndex !== -1) {
-        newPositions[promotingPawnIndex] = null; // Remove the pawn from its original position
+  
+      // Check if the pawn's position is found and remove it
+      if (promotingPawnIndex !== -1 && promotingPawnIndex !== promotionSquare) {
+        newPositions[promotingPawnIndex] = null; // Clear the pawn from its original position
       }
   
-      setPositions(newPositions); // Update the state to apply the promotion
+      // Update the state with the new positions
+      setPositions(newPositions);
   
       console.log("Updated positions array after promotion:", newPositions);
   
-      // Reset promotion-related state
-      setShowPromotionModal(false);
-      setTurn(turn === "white" ? "black" : "white");
-      setPromotionSquare(null); // Reset `promotionSquare` after the promotion is done
-      setActiveId(null);
-      setActivePieceType(null);
-      setHighlightedSquares(new Set());
-      setIsPromotion(false);
-      setPromotingPawnType(null);
+      // Reset promotion-related state after state updates
+      setTimeout(() => {
+        setShowPromotionModal(false);
+        setTurn(turn === "white" ? "black" : "white");
+        setPromotionSquare(null);
+        setActiveId(null);
+        setActivePieceType(null);
+        setHighlightedSquares(new Set());
+        setIsPromotion(false);
+  
+        // Call findTaken before resetting promotingPawnType
+        console.log("Promoting pawn type before calling findTaken:", promotingPawnType);
+        findTaken(newPositions, setTaken, false, promotingPawnType); // Pass promotingPawnType correctly
+  
+        // Reset promotingPawnType only after using it
+        console.log("Resetting promotingPawnType to null.");
+        setPromotingPawnType(null);
+      }, 100); // Slight delay ensures state updates apply correctly
     } else {
       console.log("Promotion failed: promotionSquare or activePieceType is null.");
     }
   };
   
   
+  
+  
   const triggerPromotion = (clickedId: number, activePieceType: string) => {
-    console.log("Triggering promotion for:", clickedId, activePieceType);
-  
-    setPromotionSquare(clickedId); // Set the square for promotion
-    setActivePieceType(activePieceType); // Set the type of the active piece (pawn)
-    setShowPromotionModal(true); // Show the promotion modal
+    // Set state related to promotion
+    setPromotionSquare(clickedId);
+    setActivePieceType(activePieceType);
+    setShowPromotionModal(true);
     setIsPromotion(true);
-    setPromotingPawnType(activePieceType);
-    setPromotionColor(activePieceType.startsWith('W') ? 'white' : 'black');
   
-    console.log("Promotion state set. Square:", clickedId, "Piece:", activePieceType);
+    // Correctly set the promoting pawn type
+    setPromotingPawnType(activePieceType); // Set the promoting pawn type correctly
+    console.log("Set promotingPawnType to:", activePieceType); // Debug log
+    setPromotionColor(activePieceType.startsWith('W') ? 'white' : 'black');
   };
+  
   
   
   
@@ -305,7 +322,6 @@ function App() {
         ((turn === "white" && positions[clickedId]!.startsWith("W")) ||
           (turn === "black" && positions[clickedId]!.startsWith("B")))
       ) {
-        // If a new piece is clicked, set it as the active piece and clear the previous one
         console.log(`Selecting new piece at cell-${clickedId}`);
         setActiveId(grandParentElement.id); // Set the new piece's ID as active
         setActivePieceType(positions[clickedId]); // Set the new piece's type as active
@@ -318,51 +334,39 @@ function App() {
         );
         setHighlightedSquares(new Set(newHighlightedSquares));
       } else {
-        // Attempt to move the currently active piece
         if (activeId !== null) {
           const previousId = parseInt(activeId.match(/[0-9]+/)![0], 10);
           console.log(`Attempting to move ${activePieceType} from ${previousId} to ${clickedId}`);
   
           const fromRow = Math.floor(previousId / 8);
           const toRow = Math.floor(clickedId / 8);
-          const fromCol = previousId % 8;
-          const toCol = clickedId % 8;
-          const colDiff = Math.abs(toCol - fromCol);
-          const targetPiece = positions[clickedId];
+          const colDiff = Math.abs((clickedId % 8) - (previousId % 8));
   
-          console.log(`From row: ${fromRow}, To row: ${toRow}, From column: ${fromCol}, To column: ${toCol}`);
-          console.log(`Target piece: ${targetPiece}`);
-  
-          if (
-            activePieceType &&
-            isValidMove(activePieceType, previousId, clickedId, positions, turn, lastMove)
-          ) {
+          if (activePieceType && isValidMove(activePieceType, previousId, clickedId, positions, turn, lastMove)) {
             console.log("Valid move detected");
-          
+  
             const newPositions = [...positions];
             newPositions[previousId] = null; // Clear the pawn from its previous position
-          
-            // Check for promotion
+  
+            // Check for pawn promotion
             if (
               (activePieceType.startsWith("WP") && toRow === 0) || 
               (activePieceType.startsWith("BP") && toRow === 7)
             ) {
               triggerPromotion(clickedId, activePieceType); // Trigger promotion
-              return; // Exit early to avoid clearing state
+              return; // Return early to avoid clearing state
             }
-          
+  
             newPositions[clickedId] = activePieceType; // Move the piece to the new position
             setPositions(newPositions);
-          
-            // Clear the state and set the next turn
+  
             forceClearState(setActiveId, setActivePieceType, setHighlightedSquares, setPositions);
             setTurn(turn === "white" ? "black" : "white");
-            setLastMove({ from: previousId, to: clickedId, piece: activePieceType! });
+            setLastMove({ from: previousId, to: clickedId, piece: activePieceType });
           } else {
             console.log("Invalid move detected: clearing state.");
             forceClearState(setActiveId, setActivePieceType, setHighlightedSquares, setPositions);
           }
-          
         } else {
           console.log("Invalid selection or move: clearing state.");
           forceClearState(setActiveId, setActivePieceType, setHighlightedSquares, setPositions);
@@ -463,9 +467,11 @@ function App() {
             setTaken((prev) => {
               const newTaken = [...prev];
               const capturedPiece = positions[currentId];
-              const index = newTaken.findIndex((item) => item === null);
-              if (index !== -1) newTaken[index] = capturedPiece;
-              return newTaken;
+                if (capturedPiece !== null) {
+                  const index = newTaken.findIndex((item) => item === null);
+                  if (index !== -1) newTaken[index] = capturedPiece; // Only assign if capturedPiece is not null
+                }
+                return newTaken;
             });
           }
         }
@@ -523,6 +529,10 @@ function App() {
       lastMove
     );
   }, []);
+    useEffect(() => {
+    console.log("Current Positions:", positions); // Log the positions passed to the component
+    findTaken(positions, setTaken, isPromotion, promotingPawnType); // Pass the correct number of arguments
+    }, [positions, isPromotion, promotingPawnType]);
 
   useEffect(() => {
     addPieces(

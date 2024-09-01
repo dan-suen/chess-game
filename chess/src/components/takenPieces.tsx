@@ -44,6 +44,11 @@ const findTaken = (
   isPromotion: boolean,
   promotingPawnType: string | null
 ) => {
+  if (isPromotion) {
+    console.log("Promotion in progress, skipping taken pieces calculation.");
+    return; // Exit early to avoid incorrect taken pieces calculation
+  }
+
   const pieceMap: Record<string, string> = {
     WP1: "WPawn", WP2: "WPawn", WP3: "WPawn", WP4: "WPawn", WP5: "WPawn", WP6: "WPawn", WP7: "WPawn", WP8: "WPawn",
     BP1: "BPawn", BP2: "BPawn", BP3: "BPawn", BP4: "BPawn", BP5: "BPawn", BP6: "BPawn", BP7: "BPawn", BP8: "BPawn",
@@ -58,23 +63,30 @@ const findTaken = (
   };
 
   const initialPieceCount: Record<string, number> = {
-    WPawn: 8, BPawn: 8,    
-    WBishop: 2, BBishop: 2, 
-    WRook: 2, BRook: 2,     
-    WKnight: 2, BKnight: 2, 
-    WQueen: 1, BQueen: 1,   
-    WKing: 1, BKing: 1,     
+    WPawn: 8, BPawn: 8,
+    WBishop: 2, BBishop: 2,
+    WRook: 2, BRook: 2,
+    WKnight: 2, BKnight: 2,
+    WQueen: 1, BQueen: 1,
+    WKing: 1, BKing: 1,
   };
 
-  const currentPieceCount = { ...initialPieceCount };
+  const currentPieceCount: Record<string, number> = {
+    WPawn: 0, BPawn: 0,
+    WBishop: 0, BBishop: 0,
+    WRook: 0, BRook: 0,
+    WKnight: 0, BKnight: 0,
+    WQueen: 0, BQueen: 0,
+    WKing: 0, BKing: 0,
+  };
 
-  positions.forEach((piece, index) => {
+  positions.forEach((piece) => {
     if (piece) {
-      const pieceType = pieceMap[piece]; 
-      
-      // Exclude the promoting pawn from being counted if promotion is ongoing
-      if (isPromotion && piece === promotingPawnType) {
-        console.log(`Ignoring promoting pawn of type ${piece} at position ${index}`);
+      const pieceType = pieceMap[piece];
+
+      // Exclude the promoting pawn from being counted as taken
+      if (piece === promotingPawnType) {
+        console.log(`Ignoring promoting pawn of type ${piece}`);
         return; // Do not count the promoting pawn
       }
 
@@ -85,17 +97,30 @@ const findTaken = (
       }
 
       if (pieceType && currentPieceCount[pieceType] !== undefined) {
-        currentPieceCount[pieceType] -= 1;
+        currentPieceCount[pieceType] += 1;
       }
     }
   });
 
-  const takenPieces = Object.entries(currentPieceCount)
-    .filter(([piece, count]) => count > 0)
-    .flatMap(([piece, count]) => Array(count).fill(piece));
+  if (promotingPawnType) {
+    const promotingPawnBase = promotingPawnType.startsWith("W") ? "WPawn" : "BPawn";
+    initialPieceCount[promotingPawnBase] -= 1; // Exclude the promoted pawn from the initial count
+  }
+
+  const takenPieces: string[] = [];
+
+  Object.entries(currentPieceCount).forEach(([pieceType, presentCount]) => {
+    const takenCount = initialPieceCount[pieceType] - presentCount;
+    if (takenCount > 0) {
+      takenPieces.push(...Array(takenCount).fill(pieceType));
+    }
+  });
 
   setTaken(takenPieces);
 };
+
+
+
 
 
 // Component to display taken pieces
@@ -103,7 +128,7 @@ const TakenPieces: React.FC<TakenPiecesProps> = ({ positions, isPromotion, promo
   const [taken, setTaken] = useState<string[]>([]);
 
   useEffect(() => {
-    console.log("Current Positions:", positions); // Log the positions passed to the component
+    //console.log("Current Positions:", positions); // Log the positions passed to the component
     findTaken(positions, setTaken, isPromotion, promotingPawnType); // Pass the correct number of arguments
   }, [positions, isPromotion, promotingPawnType]); // Add `promotingPawnType` to the dependency array
 
@@ -142,4 +167,4 @@ const TakenPieces: React.FC<TakenPiecesProps> = ({ positions, isPromotion, promo
   );
 };
 
-export default TakenPieces;
+export {findTaken, TakenPieces};
