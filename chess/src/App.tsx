@@ -75,19 +75,20 @@ function App() {
   
     if (promotionSquare !== null && activePieceType) {
       const basePieceName = activePieceType.startsWith("W") ? `W${choice}` : `B${choice}`;
-  
+    
       // Log the current positions before updating
       console.log("Current positions before promotion:", positions);
+      console.log("Promotion at square:", promotionSquare, "with new piece:", basePieceName);
   
       // Update the positions array to replace the pawn with the promoted piece
       const newPositions = [...positions];
       newPositions[promotionSquare] = basePieceName; // Replace the pawn with the promoted piece
-  
+    
       setPositions(newPositions); // Immediately update the state to apply the promotion
   
       // Log the updated positions after promotion
       console.log("Updated positions array after promotion:", newPositions);
-  
+    
       // Reset promotion-related state after a slight delay to avoid premature reset
       setTimeout(() => {
         setShowPromotionModal(false);
@@ -104,19 +105,18 @@ function App() {
     }
   };
   
-  
-  
-  
-  
   const triggerPromotion = (clickedId: number, activePieceType: string) => {
-    setPromotionSquare(clickedId);
-    setActivePieceType(activePieceType);
-    setShowPromotionModal(true);
-    setIsPromotion(true);
-    setPromotingPawnType(activePieceType);
-    setPromotionColor(activePieceType.startsWith('W') ? 'white' : 'black');
+    console.log("Triggering promotion for:", clickedId, activePieceType);
+  
+    setPromotionSquare(clickedId); // Set the square where promotion occurs
+    setActivePieceType(activePieceType); // Set the type of the active piece (pawn)
+    setShowPromotionModal(true); // Show the promotion modal
+    setIsPromotion(true); // Indicate that a promotion is in progress
+    setPromotingPawnType(activePieceType); // Store the type of the pawn being promoted
+    setPromotionColor(activePieceType.startsWith('W') ? 'white' : 'black'); // Set the color of the promoting piece
   };
-
+  
+  
   const isValidMove = (
     pieceType: string | null,
     from: number,
@@ -127,7 +127,7 @@ function App() {
   ): boolean => {
     if (!pieceType) return false;
   
-    const normalizedPieceType = pieceType.replace(/\d+$/, '');
+    const normalizedPieceType = pieceType.replace(/\d+$/, ''); // Remove digits from piece type
     const fromRow = Math.floor(from / 8);
     const fromCol = from % 8;
     const toRow = Math.floor(to / 8);
@@ -147,7 +147,7 @@ function App() {
       return false;
     }
   
-    // Pawn-specific move logic
+    // Piece-specific move logic
     switch (normalizedPieceType) {
       case 'WP': // White Pawn
         if (toRow === fromRow - 1 && colDiff === 0 && !targetPiece) return true; // Normal forward move
@@ -158,7 +158,7 @@ function App() {
         if (fromRow === 3 && toRow === 2 && colDiff === 1 && !targetPiece) {
           if (
             lastMove &&
-            lastMove.piece === 'BP' &&
+            lastMove.piece.startsWith('BP') &&
             lastMove.from === to + 8 &&
             lastMove.to === from + 1
           ) {
@@ -177,7 +177,7 @@ function App() {
         if (fromRow === 4 && toRow === 5 && colDiff === 1 && !targetPiece) {
           if (
             lastMove &&
-            lastMove.piece === 'WP' &&
+            lastMove.piece.startsWith('WP') &&
             lastMove.from === to - 8 &&
             lastMove.to === from - 1
           ) {
@@ -187,36 +187,73 @@ function App() {
         }
         return false;
   
-      // Other pieces (rook, knight, bishop, queen, king) logic...
+      case 'WR': // White Rook
+      case 'BR': // Black Rook
+        if (rowDiff === 0 || colDiff === 0) {
+          // Ensure the path is clear
+          for (let i = Math.min(from, to) + 1; i < Math.max(from, to); i++) {
+            if (positions[i] !== null) return false; // Path is not clear
+          }
+          return true;
+        }
+        break;
+  
+      case 'WN': // White Knight
+      case 'BN': // Black Knight
+        if ((rowDiff === 2 && colDiff === 1) || (rowDiff === 1 && colDiff === 2)) {
+          return true; // Valid knight move
+        }
+        break;
+  
+      case 'WB': // White Bishop
+      case 'BB': // Black Bishop
+        if (rowDiff === colDiff) {
+          // Ensure the path is clear
+          for (let i = 1; i < rowDiff; i++) {
+            const intermediateRow = fromRow < toRow ? fromRow + i : fromRow - i;
+            const intermediateCol = fromCol < toCol ? fromCol + i : fromCol - i;
+            if (positions[intermediateRow * 8 + intermediateCol] !== null) return false; // Path is not clear
+          }
+          return true;
+        }
+        break;
+  
+      case 'WQ': // White Queen
+      case 'BQ': // Black Queen
+        if (rowDiff === colDiff || rowDiff === 0 || colDiff === 0) {
+          // Ensure the path is clear for diagonal or straight moves
+          const stepRow = toRow === fromRow ? 0 : toRow > fromRow ? 1 : -1;
+          const stepCol = toCol === fromCol ? 0 : toCol > fromCol ? 1 : -1;
+          let currentRow = fromRow + stepRow;
+          let currentCol = fromCol + stepCol;
+  
+          while (currentRow !== toRow || currentCol !== toCol) {
+            if (positions[currentRow * 8 + currentCol] !== null) return false; // Path is not clear
+            currentRow += stepRow;
+            currentCol += stepCol;
+          }
+          return true;
+        }
+        break;
+  
+      case 'WK': // White King
+      case 'BK': // Black King
+        if (rowDiff <= 1 && colDiff <= 1) {
+          return true; // Valid king move
+        }
+        // Castling logic can be added here
+        break;
+  
+      default:
+        console.log("Piece type not recognized.");
+        return false;
     }
   
-    console.log("Piece type not recognized.");
+    console.log("Invalid move for the piece type.");
     return false;
   };
   
   
-  // Helper function to check if the path is clear between two squares
-  const isPathClear = (from: number, to: number, positions: (string | null)[]): boolean => {
-    const fromRow = Math.floor(from / 8);
-    const fromCol = from % 8;
-    const toRow = Math.floor(to / 8);
-    const toCol = to % 8;
-  
-    const rowStep = toRow > fromRow ? 1 : toRow < fromRow ? -1 : 0;
-    const colStep = toCol > fromCol ? 1 : toCol < fromCol ? -1 : 0;
-  
-    let currentRow = fromRow + rowStep;
-    let currentCol = fromCol + colStep;
-  
-    while (currentRow !== toRow || currentCol !== toCol) {
-      const index = currentRow * 8 + currentCol;
-      if (positions[index] !== null) return false; // Path is not clear
-      currentRow += rowStep;
-      currentCol += colStep;
-    }
-  
-    return true; // Path is clear
-  };
 
   const clickFunction = useCallback(
     (
@@ -293,15 +330,28 @@ function App() {
           console.log(`From row: ${fromRow}, To row: ${toRow}, From column: ${fromCol}, To column: ${toCol}`);
           console.log(`Target piece: ${targetPiece}`);
   
-          if (activePieceType && isValidMove(activePieceType, previousId, clickedId, positions, turn, lastMove)) {
+          if (
+            activePieceType &&
+            isValidMove(activePieceType, previousId, clickedId, positions, turn, lastMove)
+          ) {
             console.log("Valid move detected");
-  
+          
             const newPositions = [...positions];
-            newPositions[previousId] = null;
-            newPositions[clickedId] = activePieceType;
+            newPositions[previousId] = null; // Clear the pawn from its previous position
+          
+            // Correct the promotion logic to handle named pawns
+            if (
+              (activePieceType.startsWith("WP") && toRow === 0) || 
+              (activePieceType.startsWith("BP") && toRow === 7)
+            ) {
+              triggerPromotion(clickedId, activePieceType); // Trigger promotion
+              return; // Exit early to avoid clearing state
+            }
+          
+            newPositions[clickedId] = activePieceType; // Move the piece to the new position
             setPositions(newPositions);
-  
-            // Clear state after a valid move
+          
+            // Clear the state and set the next turn
             forceClearState(setActiveId, setActivePieceType, setHighlightedSquares, setPositions);
             setTurn(turn === "white" ? "black" : "white");
             setLastMove({ from: previousId, to: clickedId, piece: activePieceType! });
