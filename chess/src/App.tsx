@@ -107,46 +107,45 @@ function App() {
     WP1Ref, WP2Ref, WP3Ref, WP4Ref, WP5Ref, WP6Ref, WP7Ref, WP8Ref,
     BP1Ref, BP2Ref, BP3Ref, BP4Ref, BP5Ref, BP6Ref, BP7Ref, BP8Ref
   };
-
-
- const handlePromotionSelect = (choice: string) => {
-  console.log("handlePromotionSelect triggered with choice:", choice);
-
-  if (promotionSquare !== null && activePieceType) {
-    const basePieceName = activePieceType.startsWith("W") ? `W${choice}` : `B${choice}`;
-
-    // Update positions to replace the pawn with the promoted piece
-    const newPositions = [...positions];
-    newPositions[promotionSquare] = basePieceName; // Place the promoted piece
-
-    // Correctly clear the original pawn's position
-    const pawnIndex = positions.indexOf(activePieceType);
-    if (pawnIndex !== -1 && pawnIndex !== promotionSquare) {
-      newPositions[pawnIndex] = null; // Clear the pawn from its original position
+  const handlePromotionSelect = (choice: string) => {
+    console.log("handlePromotionSelect triggered with choice:", choice);
+  
+    if (promotionSquare !== null && activePieceType) {
+      const basePieceName = activePieceType.startsWith("W") ? `W${choice}` : `B${choice}`;
+  
+      const newPositions = [...positions];
+  
+      // Place the promoted piece at the promotion square
+      newPositions[promotionSquare] = basePieceName;
+  
+      // Manage the reference for the promoted pawn correctly
+      const refName = `${activePieceType}Ref` as keyof typeof refs;
+      if (refs[refName]) {
+        refs[refName].current = true; // Mark the pawn as promoted
+      }
+  
+      setPositions(newPositions);
+  
+      setTimeout(() => {
+        setShowPromotionModal(false);
+        setTurn(turn === "white" ? "black" : "white");
+        setPromotionSquare(null);
+        setActiveId(null);
+        setActivePieceType(null);
+        setHighlightedSquares(new Set());
+        setIsPromotion(false);
+  
+        console.log("Promoting pawn type before calling findTaken:", promotingPawnType);
+        findTaken(newPositions, setTaken, false, promotingPawnType, refs);
+  
+        console.log("Resetting promotingPawnType to null.");
+        setPromotingPawnType(null);
+      }, 100);
+    } else {
+      console.log("Promotion failed: promotionSquare or activePieceType is null.");
     }
-
-    setPositions(newPositions); // Update the state with the new positions
-
-    setTimeout(() => {
-      setShowPromotionModal(false);
-      setTurn(turn === "white" ? "black" : "white");
-      setPromotionSquare(null); // Reset promotion square
-      setActiveId(null);
-      setActivePieceType(null);
-      setHighlightedSquares(new Set());
-      setIsPromotion(false);
-
-      console.log("Promoting pawn type before calling findTaken:", promotingPawnType);
-      findTaken(newPositions, setTaken, false, promotingPawnType, refs);
-
-      console.log("Resetting promotingPawnType to null.");
-      setPromotingPawnType(null); // Reset promotingPawnType
-    }, 100); // Slight delay ensures state updates apply correctly
-  } else {
-    console.log("Promotion failed: promotionSquare or activePieceType is null.");
-  }
-};
-
+  };
+  
   
   
 const triggerPromotion = (clickedId: number, activePieceType: string) => {

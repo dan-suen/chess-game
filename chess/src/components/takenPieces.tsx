@@ -55,7 +55,6 @@ interface TakenPiecesProps {
   }
 }
 
-// Helper function to find taken pieces
 const findTaken = (
   positions: (string | null)[],
   setTaken: React.Dispatch<React.SetStateAction<string[]>>,
@@ -63,11 +62,29 @@ const findTaken = (
   promotingPawnType: string | null,
   refs: Record<string, React.MutableRefObject<boolean>>
 ) => {
+  console.log("Find Taken - Initial State");
+  console.log("Positions:", positions);
+  console.log("Is Promotion:", isPromotion);
+  console.log("Promoting Pawn Type:", promotingPawnType);
+  console.log("Refs:", refs);
+
+  // Skip calculation if promotion is in progress
   if (isPromotion) {
     console.log("Promotion in progress, skipping taken pieces calculation.");
     return;
   }
 
+  // Initial count of all pieces
+  const initialPieceCount: Record<string, number> = {
+    WPawn: 8, BPawn: 8,
+    WBishop: 2, BBishop: 2,
+    WRook: 2, BRook: 2,
+    WKnight: 2, BKnight: 2,
+    WQueen: 1, BQueen: 1,
+    WKing: 1, BKing: 1,
+  };
+
+  // Piece mapping
   const pieceMap: Record<string, string> = {
     WP1: "WPawn", WP2: "WPawn", WP3: "WPawn", WP4: "WPawn", WP5: "WPawn", WP6: "WPawn", WP7: "WPawn", WP8: "WPawn",
     BP1: "BPawn", BP2: "BPawn", BP3: "BPawn", BP4: "BPawn", BP5: "BPawn", BP6: "BPawn", BP7: "BPawn", BP8: "BPawn",
@@ -81,71 +98,47 @@ const findTaken = (
     WK: "WKing", BK: "BKing",
   };
 
-  const initialPieceCount: Record<string, number> = {
-    WPawn: 8, BPawn: 8,
-    WBishop: 2, BBishop: 2,
-    WRook: 2, BRook: 2,
-    WKnight: 2, BKnight: 2,
-    WQueen: 1, BQueen: 1,
-    WKing: 1, BKing: 1,
-  };
-
-  // Initialize the count of pieces currently on the board
-  const currentPieceCount: Record<string, number> = {  WPawn: 0, BPawn: 0,
+  // Track the count of pieces currently on the board
+  const currentPieceCount: Record<string, number> = {
+    WPawn: 0, BPawn: 0,
     WBishop: 0, BBishop: 0,
     WRook: 0, BRook: 0,
     WKnight: 0, BKnight: 0,
     WQueen: 0, BQueen: 0,
-    WKing: 0, BKing: 0 };
+    WKing: 0, BKing: 0,
+  };
 
-  // Traverse through the board positions to determine which pieces are still present
+  // Count pieces on the board
   positions.forEach((piece) => {
     if (piece) {
       const pieceType = pieceMap[piece];
+      console.log(`Evaluating piece: ${piece}, type: ${pieceType}`);
 
-      // Dynamically check if the ref for this piece indicates a promotion
-      if (piece.startsWith('W') || piece.startsWith('B')) {
-        const ref = refs[`${piece}Ref`];
-        if (ref && ref.current) {
-          console.log(`Promoted piece detected: ${piece}, excluding from taken count.`);
-          return; // Exclude promoted pawns
-        }
+      // Exclude promoted pawns
+      if (pieceType?.includes('Pawn') && refs[`${piece}Ref`]?.current) {
+        console.log(`Promoted piece detected: ${piece}, excluding from taken count.`);
+        return;
       }
 
-      // If the piece is found on the board, decrease the count
-      if (pieceType && currentPieceCount[pieceType] !== undefined) {
+      // Increment the count for the pieces currently on the board
+      if (pieceType) {
         currentPieceCount[pieceType]++;
       }
     }
   });
 
-  const takenPieces: string[] = [];
+  console.log("Current Piece Counts on Board:", currentPieceCount);
 
-  // Calculate the number of taken pieces correctly
-  Object.entries(initialPieceCount).forEach(([pieceType, initialCount]) => {
-    let remainingCount = currentPieceCount[pieceType];
-
-    // Hardcoded adjustment to account for promoted pawns
-    if (pieceType === 'WPawn') {
-      remainingCount += (refs.WP1Ref.current ? 1 : 0) + (refs.WP2Ref.current ? 1 : 0) + (refs.WP3Ref.current ? 1 : 0) +
-                        (refs.WP4Ref.current ? 1 : 0) + (refs.WP5Ref.current ? 1 : 0) + (refs.WP6Ref.current ? 1 : 0) +
-                        (refs.WP7Ref.current ? 1 : 0) + (refs.WP8Ref.current ? 1 : 0);
-    } else if (pieceType === 'BPawn') {
-      remainingCount += (refs.BP1Ref.current ? 1 : 0) + (refs.BP2Ref.current ? 1 : 0) + (refs.BP3Ref.current ? 1 : 0) +
-                        (refs.BP4Ref.current ? 1 : 0) + (refs.BP5Ref.current ? 1 : 0) + (refs.BP6Ref.current ? 1 : 0) +
-                        (refs.BP7Ref.current ? 1 : 0) + (refs.BP8Ref.current ? 1 : 0);
-    }
-
-    const takenCount = initialCount - remainingCount; 
-    if (takenCount > 0) {
-      takenPieces.push(...Array(takenCount).fill(pieceType));
-    }
+  // Generate the list of taken pieces by comparing the initial and current counts
+  const takenPieces: string[] = Object.entries(initialPieceCount).flatMap(([pieceType, initialCount]) => {
+    const remainingCount = currentPieceCount[pieceType];
+    const takenCount = initialCount - remainingCount;
+    return takenCount > 0 ? Array(takenCount).fill(pieceType) : [];
   });
 
-  console.log("Final taken pieces:", takenPieces); // Log the taken pieces
+  console.log("Final taken pieces:", takenPieces);
   setTaken(takenPieces);
 };
-
 
 const TakenPieces: React.FC<TakenPiecesProps> = ({ positions, isPromotion, promotingPawnType, refs }) => {
   const [taken, setTaken] = useState<string[]>([]);
@@ -190,5 +183,4 @@ const TakenPieces: React.FC<TakenPiecesProps> = ({ positions, isPromotion, promo
   );
 };
 
-
-export {findTaken, TakenPieces};
+export { findTaken, TakenPieces };
