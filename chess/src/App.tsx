@@ -442,6 +442,7 @@ const triggerPromotion = (clickedId: number, activePieceType: string) => {
         console.error("Failed to extract current ID from parent element.");
         return;
       }
+  
       const currentId = parseInt(currentIdMatch[0], 10);
   
       if (highlightedSquares.has(currentId) && activeId && activePieceType) {
@@ -466,8 +467,18 @@ const triggerPromotion = (clickedId: number, activePieceType: string) => {
         }
   
         newPositions[previousId] = null; // Clear the previous piece's position
-        newPositions[currentId] = activePieceType; // Move the piece to the new position
   
+        // Check for pawn promotion
+        const toRow = Math.floor(currentId / 8);
+        if (
+          (activePieceType.startsWith("WP") && toRow === 0) || // White pawn promotion
+          (activePieceType.startsWith("BP") && toRow === 7)   // Black pawn promotion
+        ) {
+          triggerPromotion(currentId, activePieceType); // Trigger promotion
+          return; // Return early to avoid clearing state
+        }
+  
+        newPositions[currentId] = activePieceType; // Move the piece to the new position
         setPositions(newPositions); // Update positions state
   
         // Handle promotion, en passant, and other special moves as before...
