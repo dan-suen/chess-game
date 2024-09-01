@@ -107,29 +107,30 @@ function App() {
     WP1Ref, WP2Ref, WP3Ref, WP4Ref, WP5Ref, WP6Ref, WP7Ref, WP8Ref,
     BP1Ref, BP2Ref, BP3Ref, BP4Ref, BP5Ref, BP6Ref, BP7Ref, BP8Ref
   };
+  
   const handlePromotionSelect = (choice: string) => {
     console.log("handlePromotionSelect triggered with choice:", choice);
   
     if (promotionSquare !== null && activePieceType) {
       const basePieceName = activePieceType.startsWith("W") ? `W${choice}` : `B${choice}`;
   
+      // Update positions to replace the pawn with the promoted piece
       const newPositions = [...positions];
+      newPositions[promotionSquare] = basePieceName; // Place the promoted piece
   
-      // Place the promoted piece at the promotion square
-      newPositions[promotionSquare] = basePieceName;
-  
-      // Manage the reference for the promoted pawn correctly
-      const refName = `${activePieceType}Ref` as keyof typeof refs;
-      if (refs[refName]) {
-        refs[refName].current = true; // Mark the pawn as promoted
+      // Clear the original pawn's position, even after capture promotion
+      const pawnIndex = positions.indexOf(activePieceType);
+      if (pawnIndex !== -1 && pawnIndex !== promotionSquare) {
+        newPositions[pawnIndex] = null; // Clear the pawn from its original position
       }
   
+      // Update the state with the new positions
       setPositions(newPositions);
   
       setTimeout(() => {
         setShowPromotionModal(false);
         setTurn(turn === "white" ? "black" : "white");
-        setPromotionSquare(null);
+        setPromotionSquare(null); // Reset promotion square
         setActiveId(null);
         setActivePieceType(null);
         setHighlightedSquares(new Set());
@@ -139,8 +140,8 @@ function App() {
         findTaken(newPositions, setTaken, false, promotingPawnType, refs);
   
         console.log("Resetting promotingPawnType to null.");
-        setPromotingPawnType(null);
-      }, 100);
+        setPromotingPawnType(null); // Reset promotingPawnType
+      }, 100); // Slight delay ensures state updates apply correctly
     } else {
       console.log("Promotion failed: promotionSquare or activePieceType is null.");
     }
@@ -452,7 +453,6 @@ const triggerPromotion = (clickedId: number, activePieceType: string) => {
         setPositions(newPositions);
         console.log("Valid move executed from", previousId, "to", currentId);
   
-        // Handle any special cases, such as en passant or promotion
         let shouldResetState = true; // Flag to control state reset
   
         const fromRow = Math.floor(previousId / 8);
@@ -474,7 +474,7 @@ const triggerPromotion = (clickedId: number, activePieceType: string) => {
         // Check for promotion and handle it
         if (activePieceType && /^(WP|BP)/.test(activePieceType) && (toRow === 0 || toRow === 7)) {
           console.log("Pawn promotion detected");
-          newPositions[previousId] = null;
+          newPositions[previousId] = null; // Clear the pawn's old position
           setPositions(newPositions);
           triggerPromotion(currentId, activePieceType);
           shouldResetState = false; // Prevent immediate reset to handle promotion
@@ -490,11 +490,11 @@ const triggerPromotion = (clickedId: number, activePieceType: string) => {
             setTaken((prev) => {
               const newTaken = [...prev];
               const capturedPiece = positions[currentId];
-                if (capturedPiece !== null) {
-                  const index = newTaken.findIndex((item) => item === null);
-                  if (index !== -1) newTaken[index] = capturedPiece; // Only assign if capturedPiece is not null
-                }
-                return newTaken;
+              if (capturedPiece !== null) {
+                const index = newTaken.findIndex((item) => item === null);
+                if (index !== -1) newTaken[index] = capturedPiece; // Only assign if capturedPiece is not null
+              }
+              return newTaken;
             });
           }
         }
@@ -513,6 +513,7 @@ const triggerPromotion = (clickedId: number, activePieceType: string) => {
           }, 50); // Slight delay to ensure all updates are properly processed
         }        
       } else {
+        // Handle cases when no move is executed
         const targetPiece = positions[currentId];
         if (
           targetPiece &&
@@ -532,6 +533,7 @@ const triggerPromotion = (clickedId: number, activePieceType: string) => {
     },
     [turn, activeId, positions, highlightedSquares, activePieceType, lastMove]
   );
+  
   
 
   useEffect(() => {
