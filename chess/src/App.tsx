@@ -5,7 +5,7 @@ import createBoard from "./hooks/createBoard";
 import updateSentence from "./hooks/updateSentence";
 import addPieces from "./hooks/addPieces";
 import {findTaken, TakenPieces} from "./components/takenPieces";
-import {isCheck, getHighlightIndices} from "./hooks/getHighlightIndices";
+import {isCheck, getHighlightIndices, executeCastling} from "./hooks/getHighlightIndices";
 import PromotionSelector from "./components/PromotionSelector";
 
 // Initial positions of pieces on the chessboard
@@ -436,7 +436,7 @@ const triggerPromotion = (clickedId: number, activePieceType: string) => {
       setTaken: React.Dispatch<React.SetStateAction<string[]>>
     ) => {
       const parentElement = event.currentTarget.parentElement?.parentElement;
-
+  
       if (!parentElement || !parentElement.id) {
         console.error("Parent element or its ID not found.");
         return;
@@ -454,6 +454,29 @@ const triggerPromotion = (clickedId: number, activePieceType: string) => {
         const previousId = parseInt(activeId.match(/[0-9]+/)![0], 10);
         const newPositions = [...positions];
         const targetPiece = positions[currentId];
+  
+        // Check if the move is a castling move
+        const isCastlingMove = activePieceType[1] === 'K' && Math.abs(currentId - previousId) === 2;
+  
+        if (isCastlingMove) {
+          // Determine the rook's starting position based on castling direction
+          const rookIndex = currentId > previousId ? (turn === 'white' ? 7 : 63) : (turn === 'white' ? 0 : 56);
+  
+          // Execute castling move
+          executeCastling(previousId, rookIndex, newPositions, turn);
+  
+          // Update game state after castling
+          setPositions(newPositions);
+          setLastMove({ from: previousId, to: currentId, piece: activePieceType });
+          setTurn(turn === "white" ? "black" : "white");
+          setActiveId(null);
+          setActivePieceType(null);
+          setHighlightedSquares(new Set());
+          return;
+        }
+  
+        // Continue with normal move execution if not a castling move
+        // (Same as your existing move logic)
   
         // Determine direction and index for the "en passant" captured pawn
         const pawnDirection = activePieceType.startsWith("W") ? -1 : 1;
@@ -548,6 +571,7 @@ const triggerPromotion = (clickedId: number, activePieceType: string) => {
     },
     [turn, activeId, positions, highlightedSquares, activePieceType, lastMove]
   );
+  
   useEffect(() => {
     console.log("Initializing board and pieces.");
     createBoard(flip, positions, setPositions);

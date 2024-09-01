@@ -1,3 +1,4 @@
+import isValidMove from "./isValid";
 const posToIndex = (row: number, col: number): number => row * 8 + col;
 const indexToPos = (index: number): [number, number] => [Math.floor(index / 8), index % 8];
 
@@ -119,6 +120,42 @@ const getQueenMoves = (index: number, positions: (string | null)[], activeElemen
   return [...getRookMoves(index, positions, activeElement), ...getBishopMoves(index, positions, activeElement)];
 };
 
+// Tracking the movement of pieces
+const hasMoved = {
+  WK: false,
+  WR1: false, // White King-side rook
+  WR2: false, // White Queen-side rook
+  BK: false,
+  BR1: false, // Black King-side rook
+  BR2: false  // Black Queen-side rook
+};
+
+// Check if castling is possible for the king
+const canCastle = (kingIndex: number, rookIndex: number, positions: (string | null)[], turn: string): boolean => {
+  const isKingSide = rookIndex > kingIndex;
+  const kingRow = indexToPos(kingIndex)[0];
+
+  // Check if the king or the rook has moved
+  if ((turn === 'W' && hasMoved.WK) || (turn === 'B' && hasMoved.BK)) return false;
+  if (isKingSide && ((turn === 'W' && hasMoved.WR1) || (turn === 'B' && hasMoved.BR1))) return false;
+  if (!isKingSide && ((turn === 'W' && hasMoved.WR2) || (turn === 'B' && hasMoved.BR2))) return false;
+
+  // Ensure all squares between the king and rook are empty
+  const betweenSquares = isKingSide ? [kingIndex + 1, kingIndex + 2] : [kingIndex - 1, kingIndex - 2, kingIndex - 3];
+  for (const square of betweenSquares) {
+    if (positions[square]) return false;
+  }
+
+  // Ensure none of the squares the king moves through is in check
+  const checkSquares = isKingSide ? [kingIndex, kingIndex + 1, kingIndex + 2] : [kingIndex, kingIndex - 1, kingIndex - 2];
+  for (const square of checkSquares) {
+    if (isKingInCheck(square, getAllOpponentMoves(positions, turn, null))) return false;
+  }
+
+  return true;
+};
+
+// Adjusted getKingMoves function to include castling
 const getKingMoves = (index: number, positions: (string | null)[], activeElement: string): number[] => {
   const [row, col] = indexToPos(index);
   const kingMoves = [
@@ -138,8 +175,42 @@ const getKingMoves = (index: number, positions: (string | null)[], activeElement
     }
   });
 
+  // Add castling moves
+  const turn = activeElement[0];
+  if (canCastle(index, turn === 'W' ? 7 : 63, positions, turn)) {
+    moves.push(turn === 'W' ? 6 : 62); // King-side castling target
+  }
+  if (canCastle(index, turn === 'W' ? 0 : 56, positions, turn)) {
+    moves.push(turn === 'W' ? 2 : 58); // Queen-side castling target
+  }
+
   return moves;
 };
+
+// Execute the castling move
+const executeCastling = (kingIndex: number, rookIndex: number, positions: (string | null)[], turn: string): void => {
+  const isKingSide = rookIndex > kingIndex;
+  const newKingIndex = isKingSide ? kingIndex + 2 : kingIndex - 2;
+  const newRookIndex = isKingSide ? kingIndex + 1 : kingIndex - 1;
+
+  // Move the king and rook to their new positions
+  positions[newKingIndex] = positions[kingIndex];
+  positions[newRookIndex] = positions[rookIndex];
+  positions[kingIndex] = null;
+  positions[rookIndex] = null;
+
+  // Mark pieces as moved
+  if (turn === 'W') {
+    hasMoved.WK = true;
+    if (isKingSide) hasMoved.WR1 = true;
+    else hasMoved.WR2 = true;
+  } else {
+    hasMoved.BK = true;
+    if (isKingSide) hasMoved.BR1 = true;
+    else hasMoved.BR2 = true;
+  }
+};
+
 
 const getPawnMoves = (index: number, positions: (string | null)[], activeElement: string, lastMove: { from: number; to: number; piece: string } | null): number[] => {
   const [row, col] = indexToPos(index);
@@ -243,24 +314,27 @@ const getHighlightIndices = function (
   if (!activeId || !activeElement) return [];
 
   const activeIndex = parseInt(activeId.match(/[0-9]+/)![0], 10);
-
   const activePlayer = activeElement[0];
+  const possibleMoves: number[] = getMovesForPiece(activeIndex, activeElement, positions, lastMove);
 
-  const moves: number[] = getMovesForPiece(activeIndex, activeElement, positions, lastMove);
+  console.log(`Possible moves for ${activeElement} at index ${activeIndex}:`, possibleMoves);
 
-  // Precompute opponent moves once, to avoid circular dependency
-  const opponentMoves = getAllOpponentMoves(positions, activePlayer, lastMove);
-
-  // Filter moves that do not put the active player's king in check
-  const filteredMoves = moves.filter(move => {
+  // Filter moves that are valid and do not put the active player's king in check
+  const filteredMoves = possibleMoves.filter(move => {
     const newPositions = [...positions];
     newPositions[activeIndex] = null;
     newPositions[move] = activeElement;
 
-    return !isCheck(newPositions, activePlayer, lastMove);
+    const isValid = isValidMove(activeElement, activeIndex, move, positions, activePlayer === 'W' ? 'white' : 'black', lastMove);
+    console.log(`Checking move from ${activeIndex} to ${move} for ${activeElement}: isValid = ${isValid}`);
+
+    return isValid && !isCheck(newPositions, activePlayer, lastMove);
   });
 
+  console.log(`Filtered valid moves for ${activeElement} at index ${activeIndex}:`, filteredMoves);
   return filteredMoves;
 };
 
-export {isCheck, getHighlightIndices};
+
+
+export {isCheck, getHighlightIndices, executeCastling, canCastle};
