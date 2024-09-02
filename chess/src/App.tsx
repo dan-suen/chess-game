@@ -64,7 +64,7 @@ function App() {
     BP7Ref.current = false;
     BP8Ref.current = false;
     setTimeout(() => {
-      createBoard(flip, initialPositions, setPositions);
+      createBoard(initialPositions, setPositions);
       addPieces(
         "white",
         setTurn,
@@ -588,7 +588,7 @@ const triggerPromotion = (clickedId: number, activePieceType: string) => {
   
   useEffect(() => {
     console.log("Initializing board and pieces.");
-    createBoard(flip, positions, setPositions);
+    createBoard(positions, setPositions);
     addPieces(
       turn,
   setTurn,

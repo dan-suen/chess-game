@@ -1,5 +1,5 @@
 
-const createBoard = function (flip:boolean,positions:(string|null)[], setPositions:React.Dispatch<React.SetStateAction<(string | null)[]>>) {
+const createBoard = function (positions:(string|null)[], setPositions:React.Dispatch<React.SetStateAction<(string | null)[]>>) {
     let target = document.getElementById("chessboard");
     if (target === null) {
         console.error('Target element not found');
@@ -13,26 +13,16 @@ const createBoard = function (flip:boolean,positions:(string|null)[], setPositio
         for (let j = 0; j < 8; j ++) {
             let cell = document.createElement('th');
             cell.setAttribute("id", `cell-${i+j}`);
-            if (!flip){
-
                 if ((i/8+j)%2 === 0) {
                     cell.classList.add(`blank`);
                 } else {
                     cell.classList.add(`brown`);
                 }
-            } else {
-                if ((i/8+j)%2 === 0) {
-                    cell.classList.add(`brown`);
-                } else {
-                    cell.classList.add(`blank`);
-                }
-            }
             row.appendChild(cell);
         }
         target.appendChild(row);
     }
     let array = Array(64).fill(null);
-    if (!flip) {
         array[0] = "BR1";  // Black Rook on a8
         array[1] = "BN1";  // Black Knight on b8
         array[2] = "BB1";  // Black Bishop on c8
@@ -68,44 +58,6 @@ const createBoard = function (flip:boolean,positions:(string|null)[], setPositio
         array[61] = "WB2"; // White Bishop on f1
         array[62] = "WN2"; // White Knight on g1
         array[63] = "WR2"; // White Rook on h1
-        
-    } else {
-        array[0] = "WR1";  // White Rook on a1
-        array[1] = "WN1";  // White Knight on b1
-        array[2] = "WB1";  // White Bishop on c1
-        array[3] = "WQ";   // White Queen on d1 (corrected)
-        array[4] = "WK";   // White King on e1 (corrected)
-        array[5] = "WB2";  // White Bishop on f1
-        array[6] = "WN2";  // White Knight on g1
-        array[7] = "WR2";  // White Rook on h1
-        array[8] = "WP1";
-        array[9] = "WP2";
-        array[10] = "WP3";
-        array[11] = "WP4";
-        array[12] = "WP5";
-        array[13] = "WP6";
-        array[14] = "WP7";
-        array[15] = "WP8";
-
-        
-
-        array[48] = "BP1";        
-        array[49] = "BP2";
-        array[50] = "BP3";
-        array[51] = "BP4";
-        array[52] = "BP5";
-        array[53] = "BP6";
-        array[54] = "BP7";
-        array[55] = "BP8";
-        array[56] = "BR1"; // Black Rook on a8
-        array[57] = "BN1"; // Black Knight on b8
-        array[58] = "BB1"; // Black Bishop on c8
-        array[59] = "BQ";  // Black Queen on d8 (corrected)
-        array[60] = "BK";  // Black King on e8 (corrected)
-        array[61] = "BB2"; // Black Bishop on f8
-        array[62] = "BN2"; // Black Knight on g8
-        array[63] = "BR2"; // Black Rook on h8
-    }
     setPositions(array)
 }
 
