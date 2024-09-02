@@ -459,8 +459,9 @@ const triggerPromotion = (clickedId: number, activePieceType: string) => {
         const isCastlingMove = activePieceType[1] === 'K' && Math.abs(currentId - previousId) === 2;
   
         if (isCastlingMove) {
-          // Determine the rook's starting position based on castling direction
-          const rookIndex = currentId > previousId ? (turn === 'white' ? 7 : 63) : (turn === 'white' ? 0 : 56);
+          // Determine if it's a king-side or queen-side castling
+          const isKingSide = currentId > previousId;
+          const rookIndex = isKingSide ? (turn === 'white' ? 63 : 7) : (turn === 'white' ? 56 : 0);
   
           // Execute castling move
           executeCastling(previousId, rookIndex, newPositions, turn);
@@ -476,7 +477,6 @@ const triggerPromotion = (clickedId: number, activePieceType: string) => {
         }
   
         // Continue with normal move execution if not a castling move
-        // (Same as your existing move logic)
   
         // Determine direction and index for the "en passant" captured pawn
         const pawnDirection = activePieceType.startsWith("W") ? -1 : 1;
@@ -569,8 +569,24 @@ const triggerPromotion = (clickedId: number, activePieceType: string) => {
         }
       }
     },
-    [turn, activeId, positions, highlightedSquares, activePieceType, lastMove]
+    [
+      turn,
+      activeId,
+      positions,
+      highlightedSquares,
+      activePieceType,
+      lastMove,
+      setTurn,
+      setActiveId,
+      setPositions,
+      setHighlightedSquares,
+      setActivePieceType,
+      setLastMove,
+      setTaken
+    ]
   );
+  
+  
   
   useEffect(() => {
     console.log("Initializing board and pieces.");
