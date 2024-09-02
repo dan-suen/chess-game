@@ -47,6 +47,7 @@ function App() {
     setHighlightedSquares(new Set());
     setCheck(false);
     setLastMove(null);
+    setTurn("white")
     WP1Ref.current = false;
     WP2Ref.current = false;
     WP3Ref.current = false;
