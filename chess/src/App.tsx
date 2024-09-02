@@ -22,7 +22,6 @@ const initialPositions: (string | null)[] = [
 
 function App() {
   const [positions, setPositions] = useState<(string | null)[]>(initialPositions);
-  const [flip, setFlip] = useState<boolean>(false);
   const [turn, setTurn] = useState<"black" | "white">("white");
   const [taken, setTaken] = useState<string[]>([]); 
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -42,7 +41,6 @@ function App() {
 
   const handleNewGame = () => {
     setPositions([...initialPositions]);
-    setTurn(flip ? "black" : "white");
     setTaken(Array(64).fill(null));
     setActiveId(null);
     setActivePieceType(null);
@@ -68,7 +66,7 @@ function App() {
     setTimeout(() => {
       createBoard(flip, initialPositions, setPositions);
       addPieces(
-        flip ? "black" : "white",
+        "white",
         setTurn,
         initialPositions,
         setPositions,
@@ -639,29 +637,6 @@ useEffect(() => {
   }, [positions, activeId, turn]);
 
   useEffect(() => {
-    setTurn(flip ? "black" : "white");
-    createBoard(flip, positions, setPositions);
-    setTaken(Array(64).fill(null));
-    addPieces(
-      turn,
-      setTurn,
-      positions,
-      setPositions,
-      activeId,
-      setActiveId,
-      highlightedSquares,
-      setHighlightedSquares,
-      activePieceType,
-      setActivePieceType,
-      clickFunction,
-      clickFunctionEmpty,
-      lastMove,
-      setLastMove, // Ensure setLastMove is passed correctly
-      setTaken //
-    );
-  }, [flip]);
-
-  useEffect(() => {
     addPieces(
       turn,
   setTurn,
@@ -702,14 +677,6 @@ useEffect(() => {
 
   return (
     <div className="App">
-      <Toggle
-        id="flip"
-        defaultChecked={flip}
-        onChange={() => {
-          setFlip(!flip);
-          handleNewGame();
-        }}
-      />
       <label htmlFor="flip">Play as Black</label>
       <p id="turnDisplay"></p>
       <p id="isCheck">{check ? "Check" : ""}</p>
