@@ -158,7 +158,10 @@ const canCastle = (
   }
 
   // Ensure all squares between the king and rook are empty
-  const betweenSquares = isKingSide ? [kingIndex + 1, kingIndex + 2] : [kingIndex - 1, kingIndex - 2, kingIndex - 3];
+  const betweenSquares = isKingSide
+    ? (turn === 'W' ? [61, 62] : [5, 6]) // White king-side: squares 61, 62; Black king-side: squares 5, 6
+    : (turn === 'W' ? [57, 58, 59] : [1, 2, 3]); // White queen-side: squares 57, 58, 59; Black queen-side: squares 1, 2, 3
+
   console.log(`Checking squares between king and rook: ${betweenSquares}`);
   for (const square of betweenSquares) {
     console.log(`Square ${square} state: ${positions[square]}`);
@@ -169,7 +172,10 @@ const canCastle = (
   }
 
   // Ensure none of the squares the king moves through or ends on is in check
-  const checkSquares = isKingSide ? [kingIndex, kingIndex + 1, kingIndex + 2] : [kingIndex, kingIndex - 1, kingIndex - 2];
+  const checkSquares = isKingSide
+    ? (turn === 'W' ? [60, 61, 62] : [4, 5, 6]) // White king-side: squares 60, 61, 62; Black king-side: squares 4, 5, 6
+    : (turn === 'W' ? [60, 59, 58] : [4, 3, 2]); // White queen-side: squares 60, 59, 58; Black queen-side: squares 4, 3, 2
+
   console.log(`Checking if any square in ${checkSquares} is under attack.`);
   for (const square of checkSquares) {
     if (isKingInCheck(square, opponentMoves)) {
@@ -181,6 +187,7 @@ const canCastle = (
   console.log(`Castling is allowed for ${turn} on ${isKingSide ? 'king-side' : 'queen-side'}`);
   return true;
 };
+
 
 
 const getKingMoves = (
@@ -237,7 +244,7 @@ const executeCastling = (
 ): void => {
   // Determine if it's a king-side or queen-side castling
   const isKingSide = rookIndex > kingIndex;
-  console.log("rookIndex:", rookIndex, "kingIndex:", kingIndex)
+  console.log("rookIndex:", rookIndex, "kingIndex:", kingIndex);
 
   // Calculate new positions for king and rook
   const newKingIndex = isKingSide ? kingIndex + 2 : kingIndex - 2;
@@ -255,19 +262,20 @@ const executeCastling = (
   if (turn === 'W') {
     hasMoved.WK = true; // White King
     if (isKingSide) {
-      hasMoved.WR1 = true; // White King-side Rook
+      hasMoved.WR2 = true; // White King-side Rook
     } else {
-      hasMoved.WR2 = true; // White Queen-side Rook
+      hasMoved.WR1 = true; // White Queen-side Rook
     }
   } else {
     hasMoved.BK = true; // Black King
     if (isKingSide) {
-      hasMoved.BR1 = true; // Black King-side Rook
+      hasMoved.BR2 = true; // Black King-side Rook
     } else {
-      hasMoved.BR2 = true; // Black Queen-side Rook
+      hasMoved.BR1 = true; // Black Queen-side Rook
     }
   }
 };
+
 
 
 

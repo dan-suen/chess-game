@@ -677,7 +677,6 @@ useEffect(() => {
 
   return (
     <div className="App">
-      <label htmlFor="flip">Play as Black</label>
       <p id="turnDisplay"></p>
       <p id="isCheck">{check ? "Check" : ""}</p>
       <button onClick={handleNewGame}>New Game</button>
